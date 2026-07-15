@@ -1,7 +1,8 @@
 #include <raylib.h>
 
 #include "common.h"
-#include "play_scene.h"
+#include "scenes/play_scene.h"
+#include "ui/ui.h"
 
 void play_init(PlayScene* scene) {
     scene->scene.type = PLAY_SCENE;
@@ -18,8 +19,14 @@ SceneRequest play_update(PlayScene* scene, float dt) {
     return request;
 }
 
-void play_draw(PlayScene* scene) {
+void play_draw_world(PlayScene* scene) {
     ClearBackground(BLACK);
+}
+
+SceneRequest play_draw_ui(PlayScene* scene, UiContext* ui) {
+    SceneRequest request = {.type = REQUEST_NONE};
+
+    return request;
 }
 
 void play_free(PlayScene* scene) {

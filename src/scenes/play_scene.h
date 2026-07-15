@@ -2,7 +2,8 @@
 #define PLAY_SCENE_H
 
 #include "common.h"
-#include "scene.h"
+#include "scenes/scene.h"
+#include "ui/ui.h"
 
 typedef struct {
     Scene scene;
@@ -10,7 +11,8 @@ typedef struct {
 
 void play_init(PlayScene* scene);
 SceneRequest play_update(PlayScene* scene, float dt);
-void play_draw(PlayScene* scene);
+void play_draw_world(PlayScene* scene);
+SceneRequest play_draw_ui(PlayScene* scene, UiContext* ui);
 void play_free(PlayScene* scene);
 
 #endif

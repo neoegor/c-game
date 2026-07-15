@@ -2,9 +2,10 @@
 
 #include "common.h"
 #include "game.h"
-#include "scene.h"
-#include "menu_scene.h"
-#include "play_scene.h"
+#include "scenes/scene.h"
+#include "scenes/menu_scene.h"
+#include "scenes/play_scene.h"
+#include "ui/ui.h"
 
 static void game_switch_to_scene(Game* game, SceneType scene) {
     switch (scene) {
@@ -48,20 +49,26 @@ static void game_update(Game* game, float dt) {
 }
 
 static void game_draw(Game* game) {
+    SceneRequest request = {.type = REQUEST_NONE};
+
     BeginDrawing();
 
     switch (game->current->type) {
         case MENU_SCENE: {
-            menu_draw((MenuScene*)game->current);
+            menu_draw_world((MenuScene*)game->current);
+            request = menu_draw_ui((MenuScene*)game->current, &game->ui);
             break;
         }
         case PLAY_SCENE: {
-            play_draw((PlayScene*)game->current);
+            play_draw_world((PlayScene*)game->current);
+            request = play_draw_ui((PlayScene*)game->current, &game->ui);
             break;
         }
     }
 
     EndDrawing();
+
+    game_handle_scene_request(game, request);
 }
 
 void game_init(Game* game) {
@@ -72,21 +79,26 @@ void game_init(Game* game) {
     menu_init(&game->menu);
     play_init(&game->play);
     game->current = &game->menu.scene;
+
+    ui_init(&game->ui);
 }
 
 void game_run(Game* game) {
     while (!WindowShouldClose() && game->running) {
         float dt = GetFrameTime();
+
+        ui_update(&game->ui);
         game_update(game, dt);
         game_draw(game);
     }
 }
 
 void game_free(Game* game) {
-    CloseWindow();
-
     game->running = false;
     game->current = NULL;
+
     menu_free(&game->menu);
     play_free(&game->play);
+
+    CloseWindow();
 }
