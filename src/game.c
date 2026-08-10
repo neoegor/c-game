@@ -1,11 +1,11 @@
 #include <raylib.h>
+#include <raygui.h>
 
 #include "common.h"
 #include "game.h"
 #include "scenes/scene.h"
 #include "scenes/menu_scene.h"
 #include "scenes/play_scene.h"
-#include "ui/ui.h"
 
 static void game_switch_to_scene(Game* game, SceneType scene) {
     switch (scene) {
@@ -56,12 +56,12 @@ static void game_draw(Game* game) {
     switch (game->current->type) {
         case MENU_SCENE: {
             menu_draw_world((MenuScene*)game->current);
-            request = menu_draw_ui((MenuScene*)game->current, &game->ui);
+            request = menu_draw_ui((MenuScene*)game->current);
             break;
         }
         case PLAY_SCENE: {
             play_draw_world((PlayScene*)game->current);
-            request = play_draw_ui((PlayScene*)game->current, &game->ui);
+            request = play_draw_ui((PlayScene*)game->current);
             break;
         }
     }
@@ -80,14 +80,13 @@ void game_init(Game* game) {
     play_init(&game->play);
     game->current = &game->menu.scene;
 
-    ui_init(&game->ui);
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
 }
 
 void game_run(Game* game) {
     while (!WindowShouldClose() && game->running) {
         float dt = GetFrameTime();
 
-        ui_update(&game->ui);
         game_update(game, dt);
         game_draw(game);
     }
