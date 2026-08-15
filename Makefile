@@ -13,7 +13,16 @@ LDFLAGS = -L$(RAYLIB)/lib -lraylib \
 	-framework IOKit \
 	-framework CoreVideo
 
-SRC = src/main.c src/game.c src/scenes/scene.c src/scenes/menu_scene.c src/scenes/play_scene.c external/raygui/raygui_impl.c
+SRC = src/main.c \
+	  src/game.c \
+	  src/scenes/scene.c \
+	  src/scenes/menu_scene.c \
+	  src/scenes/play_scene.c \
+	  src/world/play_world.c \
+	  src/entities/tower.c \
+	  src/entities/path.c \
+	  src/entities/enemy.c \
+	  external/raygui/raygui_impl.c
 	
 
 game: $(SRC)
