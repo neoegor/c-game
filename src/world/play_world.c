@@ -18,11 +18,12 @@ void play_world_spawn_enemy(PlayWorld* world) {
         enemy,
         world->next_enemy_id++,
         begining,
-        velocity
+        velocity,
+        GetRandomValue(1, 9)
     );
 }
 
-void play_world_kill_enemy(PlayWorld* world, int id) {
+void play_world_kill_enemy(PlayWorld* world, EnemyID id) {
     for (int i = 0; i < world->enemy_count; i++) {
         if (world->enemies[i].id == id) {
             memmove(
@@ -31,6 +32,26 @@ void play_world_kill_enemy(PlayWorld* world, int id) {
                 (world->enemy_count - i - 1) * sizeof(world->enemies[0])
             );
             world->enemy_count--;
+            return;
+        }
+    }
+}
+
+void play_world_transform_enemy(PlayWorld* world, EnemyID id) {
+    for (int i = 0; i < world->enemy_count; i++) {
+        Enemy* enemy = &world->enemies[i];
+        if (enemy->id == id) {
+            enemy->value -= 1;
+            
+            if (enemy->value == 0) {
+                memmove(
+                    &world->enemies[i],
+                    &world->enemies[i + 1],
+                    (world->enemy_count - i - 1) * sizeof(world->enemies[0])
+                );
+                world->enemy_count--;
+            }
+
             return;
         }
     }
@@ -60,7 +81,8 @@ static void towers_update(PlayWorld* world, float dt) {
     // temp, should be done as recieved
     for (int i = 0; i < event_count; i++) {
         if (events[i].type == TOWER_EVENT_PROJECTILE_HIT) {
-            play_world_kill_enemy(world, events[i].enemy_id);
+            // play_world_kill_enemy(world, events[i].enemy_id);
+            play_world_transform_enemy(world, events[i].enemy_id);
         }
     }
 }
@@ -86,13 +108,18 @@ void play_world_init(PlayWorld* world) {
     world->next_enemy_id = 0;
 
     world->path.count = 0;
-    world->path.points[world->path.count++] = (Vector2){0, 7};
+    world->path.points[world->path.count++] = (Vector2){-1, 7};
     world->path.points[world->path.count++] = (Vector2){22, 7};
     world->path.points[world->path.count++] = (Vector2){22, 22};
-    world->path.points[world->path.count++] = (Vector2){44, 22};
+    world->path.points[world->path.count++] = (Vector2){45, 22};
+
+    wave_init(&world->wave, 10);
 }
 
 void play_world_update(PlayWorld* world, float dt) {
+    if (wave_update(&world->wave, dt)) {
+        play_world_spawn_enemy(world);
+    }
     towers_update(world, dt);
     enemies_update(world, dt);
 }

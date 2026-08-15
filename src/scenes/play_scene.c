@@ -6,18 +6,11 @@
 #include "scenes/play_scene.h"
 #include "world/play_world.h"
 
-static void draw_grid() {
-    int sw = GetScreenWidth();
-    int sh = GetScreenHeight();
-
-    for (int row = 0; row*CELL < sh; row++) {
-        for (int col = 0; col*CELL < sw; col++) {
-            Color color = WHITE;
-            if ((col + row) % 2 == 0) color = LIGHTGRAY;
-
-            DrawRectangle(col*CELL, row*CELL, CELL, CELL, color);
-        }
-    }
+static void draw_hover_cell(PlayScene* scene) {
+    Vector2 mouse = GetMousePosition();
+    int grid_x = (int)floorf(mouse.x / CELL);
+    int grid_y = (int)floorf(mouse.y / CELL);
+    DrawRectangle(grid_x*CELL, grid_y*CELL, CELL, CELL, GRAY);
 }
 
 static void draw_towers(PlayScene* scene) {
@@ -34,16 +27,39 @@ static void draw_towers(PlayScene* scene) {
 }
 
 static void draw_path(PlayScene* scene) {
-    for (int i = 0; i < scene->world.path.count; i++) {
-        Vector2 point = scene->world.path.points[i];
-        DrawRectangle(point.x*CELL, point.y*CELL, CELL, CELL, GREEN);
+    Vector2 prev = scene->world.path.points[0];
+    for (int i = 1; i < scene->world.path.count; i++) {
+        Vector2 current = scene->world.path.points[i];
+        DrawRectangle(
+            prev.x*CELL,
+            prev.y*CELL,
+            CELL + (current.x - prev.x)*CELL,
+            CELL + (current.y - prev.y)*CELL,
+            LIGHTGRAY
+        );
+        prev = current;
     }
 }
 
 static void draw_enemies(PlayScene* scene) {
     for (int i = 0; i < scene->world.enemy_count; i++) {
         Enemy enemy = scene->world.enemies[i];
-        DrawRectangle(enemy.position.x*CELL, enemy.position.y*CELL, CELL, CELL, RED);
+        DrawRectangle(
+            enemy.position.x*CELL,
+            enemy.position.y*CELL,
+            CELL,
+            CELL,
+            RED
+        );
+        const char *text = TextFormat("%d", enemy.value);
+        int width = MeasureText(text, CELL);
+        DrawText(
+            text,
+            enemy.position.x*CELL + (CELL - width) / 2,
+            enemy.position.y*CELL,
+            CELL,
+            BLACK
+        );
     }
 }
 
@@ -72,8 +88,6 @@ SceneRequest play_update(PlayScene* scene, float dt) {
     if (IsKeyPressed(KEY_A)) {
         request.type = REQUEST_SWITCH;
         request.target = MENU_SCENE;
-    } else if (IsKeyPressed(KEY_E)) {
-        play_world_spawn_enemy(&scene->world);
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         Vector2 mouse = GetMousePosition();
         int grid_x = (int)floorf(mouse.x / CELL);
@@ -87,10 +101,10 @@ SceneRequest play_update(PlayScene* scene, float dt) {
 }
 
 void play_draw_world(PlayScene* scene) {
-    ClearBackground(BLACK);
-    draw_grid();
-    draw_towers(scene);
+    ClearBackground(WHITE);
+    draw_hover_cell(scene);
     draw_path(scene);
+    draw_towers(scene);
     draw_enemies(scene);
     draw_projectiles(scene);
 }

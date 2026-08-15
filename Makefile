@@ -22,6 +22,7 @@ SRC = src/main.c \
 	  src/entities/tower.c \
 	  src/entities/path.c \
 	  src/entities/enemy.c \
+	  src/entities/wave.c \
 	  external/raygui/raygui_impl.c
 	
 

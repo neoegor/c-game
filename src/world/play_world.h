@@ -5,6 +5,7 @@
 #include "entities/tower.h"
 #include "entities/enemy.h"
 #include "entities/path.h"
+#include "entities/wave.h"
 
 typedef struct {
     Tower towers[128];
@@ -13,6 +14,7 @@ typedef struct {
     Enemy enemies[128];
     int enemy_count;
     Path path;
+    EnemyWave wave;
 } PlayWorld;
 
 void play_world_init(PlayWorld* world);

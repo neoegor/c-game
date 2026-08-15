@@ -1,7 +1,7 @@
 Plan
 - [x] Enemy target policy, attack range
 - [x] Clean up
-- [ ] Enemy as number, waves
+- [x] Enemy as number, waves
 - [ ] Tower types
 - [ ] Health, currency, win/loss conditions
 - [ ] Inventory, tower placement

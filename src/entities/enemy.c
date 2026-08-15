@@ -9,12 +9,14 @@ void enemy_init(
     Enemy* enemy,
     EnemyID id,
     Vector2 position,
-    Vector2 velocity
+    Vector2 velocity,
+    int value
 ) {
     enemy->id = id;
     enemy->position = position;
     enemy->velocity = velocity;
     enemy->target = 1;
+    enemy->value = value;
 }
 
 EnemyResult enemy_update(
@@ -22,11 +24,12 @@ EnemyResult enemy_update(
     Path* path,
     float dt
 ) {
-    Vector2 to_target = Vector2Subtract(
-        path->points[enemy->target],
-        enemy->position
+    float distance = Vector2Length(
+        Vector2Subtract(
+            path->points[enemy->target],
+            enemy->position
+        )
     );
-    float distance = Vector2Length(to_target);
     float about_to_travel = Vector2Length(
         Vector2Scale(
             enemy->velocity,

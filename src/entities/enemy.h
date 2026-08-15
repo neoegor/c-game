@@ -6,7 +6,7 @@
 #include "common.h"
 #include "path.h"
 
-#define ENEMY_SPEED 5.0f
+#define ENEMY_SPEED 4.0f
 
 typedef int EnemyID;
 
@@ -15,6 +15,7 @@ typedef struct {
     Vector2 position;
     Vector2 velocity;
     int target;
+    int value;
 } Enemy;
 
 typedef enum {
@@ -26,7 +27,8 @@ void enemy_init(
     Enemy* enemy,
     EnemyID id,
     Vector2 position,
-    Vector2 velocity
+    Vector2 velocity,
+    int value
 );
 EnemyResult enemy_update(
     Enemy* enemy,
