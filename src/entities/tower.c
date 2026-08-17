@@ -6,13 +6,40 @@
 #include "common.h"
 #include "entities/tower.h"
 #include "entities/path.h"
+
+#define EPSILON 0.000001f
+
+typedef struct {
+    bool found;
+    EnemyID enemy_id;
+    Vector2 impact_position;
+    float impact_time;
+} TargetSolution;
+
+static bool is_prime(int n) {
+    if (n < 2) {
+        return false;
+    }
+
+    if (n % 2 == 0) {
+        return n == 2;
+    }
+
+    for (int divisor = 3; divisor <= n / divisor; divisor += 2) {
+        if (n % divisor == 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
  
-static bool tower_calculate_impact_time(Vector2 tower_position, Vector2 enemy_position, Vector2 enemy_velocity, float t_offset, float* out_t) {
+static bool tower_calculate_impact_time(Vector2 tower_position, Vector2 enemy_position, Vector2 enemy_velocity, float projectile_speed, float t_offset, float* out_t) {
     Vector2 r = Vector2Subtract(enemy_position, tower_position);
     float a, b, c, d, t1, t2, t;
-    a = Vector2LengthSqr(enemy_velocity) - PROJ_SPEED * PROJ_SPEED;
-    b = 2 * (Vector2DotProduct(r, enemy_velocity) - PROJ_SPEED * PROJ_SPEED * t_offset);
-    c = Vector2LengthSqr(r) - PROJ_SPEED * PROJ_SPEED * t_offset * t_offset;
+    a = Vector2LengthSqr(enemy_velocity) - projectile_speed * projectile_speed;
+    b = 2 * (Vector2DotProduct(r, enemy_velocity) - projectile_speed * projectile_speed * t_offset);
+    c = Vector2LengthSqr(r) - projectile_speed * projectile_speed * t_offset * t_offset;
 
     if (fabsf(a) < EPSILON) {
         if (fabsf(b) < EPSILON) {
@@ -50,7 +77,9 @@ static bool tower_calculate_impact_time(Vector2 tower_position, Vector2 enemy_po
     return true;
 }
 
-static bool tower_calculate_target(Tower* tower, Path* path, Enemy* enemy, Vector2* target_out, float* time_until_impact) {
+static TargetSolution tower_predict_intercept(Tower* tower, Path* path, Enemy* enemy) {
+    TargetSolution result = {.found = false, .enemy_id = enemy->id};
+
     Vector2 tower_position = tower->position;
     Vector2 enemy_position = enemy->position;
     Vector2 enemy_velocity = enemy->velocity;
@@ -65,6 +94,7 @@ static bool tower_calculate_target(Tower* tower, Path* path, Enemy* enemy, Vecto
             tower_position,
             enemy_position,
             enemy_velocity,
+            tower->projectile_speed,
             t_offset,
             &t
         )) {
@@ -73,16 +103,17 @@ static bool tower_calculate_target(Tower* tower, Path* path, Enemy* enemy, Vecto
             }
         }
 
-        if (i == path->count - 1) return false;
+        if (i == path->count - 1) return result;
 
         t_offset += time_until_next_waypoint;
         enemy_position = next_waypoint;
         enemy_velocity = Vector2Scale(path_get_next_direction(path, i), ENEMY_SPEED);
     }
 
-    *target_out = Vector2Add(enemy_position, Vector2Scale(enemy_velocity, t));
-    *time_until_impact = t_offset + t;
-    return true;
+    result.found = true;
+    result.impact_position = Vector2Add(enemy_position, Vector2Scale(enemy_velocity, t));
+    result.impact_time = t_offset + t;
+    return result;
 }
 
 static void tower_update_projectiles(
@@ -101,7 +132,9 @@ static void tower_update_projectiles(
         } else {
             events[(*event_count)++] = (TowerEvent){
                 .type = TOWER_EVENT_PROJECTILE_HIT,
-                .enemy_id = proj->target_enemy_id
+                .enemy_id = proj->target_enemy_id,
+                .op_type = tower->op_type,
+                .operand = tower->operand
             };
             memmove(
                 &tower->projectiles[i],
@@ -114,44 +147,93 @@ static void tower_update_projectiles(
     }
 }
 
-static void tower_attack(Tower* tower, Enemy* enemies, int enemy_count, Path* path) {
-    Vector2 potential_target, final_target;
-    float time_until_impact, min_time;
-    min_time = INFINITY;
-    int enemy_id;
-
-    for (int i = 0; i < enemy_count; i++) {
-        Enemy* enemy = &enemies[i];
-        if (tower_calculate_target(
-            tower,
-            path,
-            enemy,
-            &potential_target,
-            &time_until_impact
-        ) && time_until_impact < min_time && Vector2Length(Vector2Subtract(tower->position, enemy->position)) <= ATTACK_RADIUS) {
-            min_time = time_until_impact;
-            final_target = potential_target;
-            enemy_id = enemies[i].id;
-        }
+static bool tower_can_affect_enemy(Tower* tower, Enemy* enemy) {
+    switch (tower->op_type) {
+        case OP_EQUALS:
+            if (enemy->value != tower->operand) return false;
+            break;
+        case OP_PRIME:
+            if (!is_prime(enemy->value)) return false;
+            break;
+        default:
+            break;
     }
 
-    if (!isinf(min_time)) {
+    return true;
+}
+
+static bool tower_enemy_in_range(Tower* tower, Enemy* enemy) {
+    return Vector2Length(Vector2Subtract(tower->position, enemy->position)) <= tower->attack_radius;
+}
+
+static void tower_fire_at(Tower* tower, EnemyID enemy_id, Vector2 impact_position) {
         Projectile* proj = &tower->projectiles[tower->projectile_count++];
         proj->target_enemy_id = enemy_id;
         proj->position = tower->position;
         proj->velocity = Vector2Scale(
-            Vector2Normalize(Vector2Subtract(final_target, tower->position)), 
-            PROJ_SPEED
+            Vector2Normalize(
+                Vector2Subtract(
+                    impact_position,
+                    tower->position
+                )
+            ), 
+            tower->projectile_speed
         );
-        proj->target_position = final_target;
-    }
+        proj->target_position = impact_position;
 }
 
-void tower_init(Tower* tower, Vector2 position) {
+static bool tower_attack(Tower* tower, Enemy* enemies, int enemy_count, Path* path) {
+    TargetSolution result = {.found = false, .impact_time = INFINITY};
+
+    for (int i = 0; i < enemy_count; i++) {
+        Enemy* enemy = &enemies[i];
+
+        if (
+            !tower_enemy_in_range(tower, enemy) ||
+            !tower_can_affect_enemy(tower, enemy) 
+        ) continue;
+
+        TargetSolution solution = tower_predict_intercept(
+            tower,
+            path,
+            enemy
+        );
+
+        if (solution.found && solution.impact_time < result.impact_time) {
+            result = solution;
+        }
+    }
+
+    if (result.found) {
+        tower_fire_at(tower, result.enemy_id, result.impact_position);
+        return true;
+    }
+
+    return false;
+}
+
+static const TowerDefinition definitions[] = {
+    [TOWER_ADD] = {OP_ADD, 0.5f, 5.5f, 10.0f},
+    [TOWER_MULTIPLY] = {OP_MULTIPLY, 0.5f, 5.5f, 10.0f},
+    [TOWER_EQUALS] = {OP_EQUALS, 0.5f, 8.5f, 10.0f},
+    [TOWER_PRIME] = {OP_PRIME, 0.5f, 8.5f, 30.0f},
+};
+
+void tower_init(
+    Tower* tower,
+    TowerType type,
+    int operand,
+    Vector2 position
+) {
+    tower->type = type;
+    tower->op_type = definitions[type].operation;
+    tower->operand = operand;
     tower->position = position;
-    tower->attack_interval = ATTACK_INTERVAL;
+    tower->attack_interval = definitions[type].attack_interval;
     tower->time_since_attack = 0;
+    tower->attack_radius = definitions[type].attack_radius;
     tower->projectile_count = 0;
+    tower->projectile_speed = definitions[type].projectile_speed;
 }
 
 void tower_update(
@@ -164,14 +246,19 @@ void tower_update(
     int* event_count
 ) {
     tower->time_since_attack += dt;
+
     while (tower->time_since_attack >= tower->attack_interval) {
-        tower->time_since_attack -= tower->attack_interval;
-        tower_attack(
+        if (!tower_attack(
             tower,
             enemies,
             enemy_count,
             path
-        );
+        )) {
+            tower->time_since_attack = tower->attack_interval;
+            break;
+        }
+
+        tower->time_since_attack -= tower->attack_interval;
     }
 
     tower_update_projectiles(tower, dt, events, event_count);

@@ -7,10 +7,26 @@
 #include "entities/path.h"
 #include "entities/enemy.h"
 
-#define ATTACK_INTERVAL 0.5f
-#define ATTACK_RADIUS 5.0f
-#define PROJ_SPEED 10.0f
-#define EPSILON 0.000001f
+typedef enum {
+    TOWER_ADD,
+    TOWER_MULTIPLY,
+    TOWER_EQUALS,
+    TOWER_PRIME
+} TowerType;
+
+typedef enum {
+    OP_ADD,
+    OP_MULTIPLY,
+    OP_EQUALS,
+    OP_PRIME
+} OperationType;
+
+typedef struct {
+    OperationType operation;
+    float attack_interval;
+    float attack_radius;
+    float projectile_speed;
+} TowerDefinition;
 
 typedef struct {
     int target_enemy_id;
@@ -20,11 +36,16 @@ typedef struct {
 } Projectile;
 
 typedef struct {
+    TowerType type;
+    OperationType op_type;
+    int operand;
     Vector2 position;
     float attack_interval;
     float time_since_attack;
+    float attack_radius;
     Projectile projectiles[128];
     int projectile_count;
+    float projectile_speed;
 } Tower;
 
 typedef enum {
@@ -34,9 +55,16 @@ typedef enum {
 typedef struct {
     TowerEventType type;
     EnemyID enemy_id;
+    OperationType op_type;
+    int operand;
 } TowerEvent;
 
-void tower_init(Tower* tower, Vector2 position);
+void tower_init(
+    Tower* tower,
+    TowerType type,
+    int operand,
+    Vector2 position
+);
 void tower_update(
     Tower* tower,
     Enemy* enemies,

@@ -37,11 +37,22 @@ void play_world_kill_enemy(PlayWorld* world, EnemyID id) {
     }
 }
 
-void play_world_transform_enemy(PlayWorld* world, EnemyID id) {
+void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_type, int operand) {
     for (int i = 0; i < world->enemy_count; i++) {
         Enemy* enemy = &world->enemies[i];
         if (enemy->id == id) {
-            enemy->value -= 1;
+            switch (op_type) {
+                case OP_ADD:
+                    enemy->value += operand;
+                    break;
+                case OP_MULTIPLY:
+                    enemy->value *= operand;
+                    break;
+                case OP_EQUALS:
+                case OP_PRIME:
+                    enemy->value = 0;
+                    break;
+            }
             
             if (enemy->value == 0) {
                 memmove(
@@ -59,7 +70,7 @@ void play_world_transform_enemy(PlayWorld* world, EnemyID id) {
 
 void play_world_place_tower(PlayWorld* world, Vector2 position) {
     Tower* tower = &world->towers[world->tower_count++];
-    tower_init(tower, position);
+    tower_init(tower, TOWER_PRIME, 2, position);
 }
 
 static void towers_update(PlayWorld* world, float dt) {
@@ -81,8 +92,7 @@ static void towers_update(PlayWorld* world, float dt) {
     // temp, should be done as recieved
     for (int i = 0; i < event_count; i++) {
         if (events[i].type == TOWER_EVENT_PROJECTILE_HIT) {
-            // play_world_kill_enemy(world, events[i].enemy_id);
-            play_world_transform_enemy(world, events[i].enemy_id);
+            play_world_transform_enemy(world, events[i].enemy_id, events[i].op_type, events[i].operand);
         }
     }
 }
@@ -113,7 +123,7 @@ void play_world_init(PlayWorld* world) {
     world->path.points[world->path.count++] = (Vector2){22, 22};
     world->path.points[world->path.count++] = (Vector2){45, 22};
 
-    wave_init(&world->wave, 10);
+    wave_init(&world->wave, 100);
 }
 
 void play_world_update(PlayWorld* world, float dt) {

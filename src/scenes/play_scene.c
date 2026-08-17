@@ -20,7 +20,7 @@ static void draw_towers(PlayScene* scene) {
         DrawCircleLines(
             tower.position.x*CELL + CELL/2,
             tower.position.y*CELL + CELL/2,
-            ATTACK_RADIUS*CELL,
+            tower.attack_radius*CELL,
             BLACK
         );
     }
