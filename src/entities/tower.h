@@ -59,6 +59,11 @@ typedef struct {
     int operand;
 } TowerEvent;
 
+bool operation_can_apply(
+    OperationType operation,
+    int operand,
+    int enemy_value
+);
 void tower_init(
     Tower* tower,
     TowerType type,
@@ -74,5 +79,4 @@ void tower_update(
     TowerEvent *events,
     int* event_count
 );
-
 #endif

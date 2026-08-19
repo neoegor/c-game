@@ -2,6 +2,7 @@
 #include <raymath.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "common.h"
 #include "world/play_world.h"
@@ -41,6 +42,9 @@ void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_t
     for (int i = 0; i < world->enemy_count; i++) {
         Enemy* enemy = &world->enemies[i];
         if (enemy->id == id) {
+            if (!operation_can_apply(op_type, operand, enemy->value)) 
+                return;
+
             switch (op_type) {
                 case OP_ADD:
                     enemy->value += operand;
@@ -55,6 +59,7 @@ void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_t
             }
             
             if (enemy->value == 0) {
+                world->currency += 100;
                 memmove(
                     &world->enemies[i],
                     &world->enemies[i + 1],
@@ -70,7 +75,7 @@ void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_t
 
 void play_world_place_tower(PlayWorld* world, Vector2 position) {
     Tower* tower = &world->towers[world->tower_count++];
-    tower_init(tower, TOWER_PRIME, 2, position);
+    tower_init(tower, TOWER_PRIME, -1, position);
 }
 
 static void towers_update(PlayWorld* world, float dt) {
@@ -105,31 +110,52 @@ static void enemies_update(PlayWorld* world, float dt) {
             &world->path,
             dt
         );
+
         if (result == ENEMY_REACHED_EXIT) {
+            world->health -= abs(enemy->value);
+
             play_world_kill_enemy(world, enemy->id);
             i--;
         }
     }
 }
 
+static void play_world_check_end_condition(PlayWorld* world) {
+    if (world->health <= 0) {
+        world->health = 0;
+        world->state = WORLD_LOST;
+    } else if (world->wave.total_enemies == world->wave.spawned_enemies && world->enemy_count == 0) {
+        world->state = WORLD_WON;
+    }
+}
+
 void play_world_init(PlayWorld* world) {
+    world->state = WORLD_PLAYING;
+    world->health = 100;
+    world->currency = 0;
     world->tower_count = 0;
     world->enemy_count = 0;
     world->next_enemy_id = 0;
 
     world->path.count = 0;
     world->path.points[world->path.count++] = (Vector2){-1, 7};
-    world->path.points[world->path.count++] = (Vector2){22, 7};
-    world->path.points[world->path.count++] = (Vector2){22, 22};
-    world->path.points[world->path.count++] = (Vector2){45, 22};
+    world->path.points[world->path.count++] = (Vector2){35, 7};
+    world->path.points[world->path.count++] = (Vector2){35, 14};
+    world->path.points[world->path.count++] = (Vector2){20, 14};
+    world->path.points[world->path.count++] = (Vector2){20, 23};
+    world->path.points[world->path.count++] = (Vector2){45, 23};
 
     wave_init(&world->wave, 100);
 }
 
 void play_world_update(PlayWorld* world, float dt) {
+    if (world->state != WORLD_PLAYING) return;
+
     if (wave_update(&world->wave, dt)) {
         play_world_spawn_enemy(world);
     }
     towers_update(world, dt);
     enemies_update(world, dt);
+
+    play_world_check_end_condition(world);
 }

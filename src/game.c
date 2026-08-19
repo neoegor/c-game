@@ -14,6 +14,7 @@ static void game_switch_to_scene(Game* game, SceneType scene) {
             break;
         case PLAY_SCENE:
             game->current = &game->play.scene;
+            play_reset((PlayScene*)game->current);
             break;
     }
 }

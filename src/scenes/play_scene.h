@@ -15,6 +15,7 @@ typedef struct {
 } PlayScene;
 
 void play_init(PlayScene* scene);
+void play_reset(PlayScene* scene);
 SceneRequest play_update(PlayScene* scene, float dt);
 void play_draw_world(PlayScene* scene);
 SceneRequest play_draw_ui(PlayScene* scene);

@@ -7,7 +7,16 @@
 #include "entities/path.h"
 #include "entities/wave.h"
 
+typedef enum {
+    WORLD_PLAYING,
+    WORLD_WON,
+    WORLD_LOST
+} WorldState;
+
 typedef struct {
+    WorldState state;
+    int health;
+    int currency;
     Tower towers[128];
     int tower_count;
     int next_enemy_id;

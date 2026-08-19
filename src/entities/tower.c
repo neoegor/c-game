@@ -148,18 +148,7 @@ static void tower_update_projectiles(
 }
 
 static bool tower_can_affect_enemy(Tower* tower, Enemy* enemy) {
-    switch (tower->op_type) {
-        case OP_EQUALS:
-            if (enemy->value != tower->operand) return false;
-            break;
-        case OP_PRIME:
-            if (!is_prime(enemy->value)) return false;
-            break;
-        default:
-            break;
-    }
-
-    return true;
+    return operation_can_apply(tower->op_type, tower->operand, enemy->value);
 }
 
 static bool tower_enemy_in_range(Tower* tower, Enemy* enemy) {
@@ -218,6 +207,25 @@ static const TowerDefinition definitions[] = {
     [TOWER_EQUALS] = {OP_EQUALS, 0.5f, 8.5f, 10.0f},
     [TOWER_PRIME] = {OP_PRIME, 0.5f, 8.5f, 30.0f},
 };
+
+bool operation_can_apply(
+    OperationType operation,
+    int operand,
+    int enemy_value
+) {
+    switch (operation) {
+        case OP_EQUALS:
+            if (enemy_value != operand) return false;
+            break;
+        case OP_PRIME:
+            if (!is_prime(enemy_value)) return false;
+            break;
+        default:
+            break;
+    }
+
+    return true;
+}
 
 void tower_init(
     Tower* tower,
