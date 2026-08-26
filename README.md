@@ -8,3 +8,4 @@ Plan
 - [ ] Path generation
 - [ ] GUI
 - [ ] Assets, sounds, animations
+

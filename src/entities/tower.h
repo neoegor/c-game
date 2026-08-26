@@ -8,24 +8,34 @@
 #include "entities/enemy.h"
 
 typedef enum {
-    TOWER_ADD,
+    TOWER_ADDITION,
+    TOWER_SUBTRACT,
     TOWER_MULTIPLY,
+    TOWER_DIVIDE,
     TOWER_EQUALS,
     TOWER_PRIME
 } TowerType;
 
 typedef enum {
-    OP_ADD,
+    OP_ADDITION,
+    OP_SUBTRACT,
     OP_MULTIPLY,
+    OP_DIVIDE,
     OP_EQUALS,
     OP_PRIME
 } OperationType;
 
 typedef struct {
+    const char *display_name;
     OperationType operation;
+    bool operand_required;
+    int default_operand;
+    int min_operand;
+    int max_operand;
     float attack_interval;
     float attack_radius;
     float projectile_speed;
+    float cost;
 } TowerDefinition;
 
 typedef struct {
@@ -64,6 +74,7 @@ bool operation_can_apply(
     int operand,
     int enemy_value
 );
+const TowerDefinition *tower_get_definition(TowerType type);
 void tower_init(
     Tower* tower,
     TowerType type,

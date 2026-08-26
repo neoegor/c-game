@@ -46,11 +46,17 @@ void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_t
                 return;
 
             switch (op_type) {
-                case OP_ADD:
+                case OP_ADDITION:
                     enemy->value += operand;
+                    break;
+                case OP_SUBTRACT:
+                    enemy->value -= operand;
                     break;
                 case OP_MULTIPLY:
                     enemy->value *= operand;
+                    break;
+                case OP_DIVIDE:
+                    enemy->value /= operand;
                     break;
                 case OP_EQUALS:
                 case OP_PRIME:
@@ -73,9 +79,56 @@ void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_t
     }
 }
 
-void play_world_place_tower(PlayWorld* world, Vector2 position) {
+bool tower_placement_is_allowed(PlayWorld* world, Vector2 position, TowerType type) {
+    // Currency
+    float cost = tower_get_definition(type)->cost;
+    if (cost > world->currency) return false;
+
+    // Towers
+    for (int i = 0; i < world->tower_count; i++) {
+        Tower* tower = &world->towers[i];
+
+        if (Vector2Equals(tower->position, position)) {
+            return false;
+        }
+    }
+
+    // Path
+    for (int i = 1; i < world->path.count; i++) {
+        Vector2 segment_start = world->path.points[i-1];
+        Vector2 segment_end = world->path.points[i];
+
+        if (segment_start.x == segment_end.x) {
+            if (position.x == segment_start.x) {
+                float min_y = fminf(segment_start.y, segment_end.y);
+                float max_y = fmaxf(segment_start.y, segment_end.y);
+
+                if (position.y >= min_y && position.y <= max_y) {
+                    return false;
+                }
+            }
+        } else if (segment_start.y == segment_end.y) {
+            if (position.y == segment_start.y) {
+                float min_x = fminf(segment_start.x, segment_end.x);
+                float max_x = fmaxf(segment_start.x, segment_end.x);
+
+                if (position.x >= min_x && position.x <= max_x) {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    return true;
+}
+
+void play_world_place_tower(PlayWorld* world, Vector2 position, TowerType type, int operand) {
+    if (!tower_placement_is_allowed(world, position, type)) return;
+    float cost = tower_get_definition(type)->cost;
+    world->currency -= cost;
+
     Tower* tower = &world->towers[world->tower_count++];
-    tower_init(tower, TOWER_PRIME, -1, position);
+    tower_init(tower, type, operand, position);
 }
 
 static void towers_update(PlayWorld* world, float dt) {
@@ -131,8 +184,17 @@ static void play_world_check_end_condition(PlayWorld* world) {
 
 void play_world_init(PlayWorld* world) {
     world->state = WORLD_PLAYING;
-    world->health = 100;
-    world->currency = 0;
+    world->health = INITIAL_HEALTH;
+    world->currency = INITIAL_CURRENCY;
+
+    inventory_init(&world->inventory);
+    inventory_add_tower(&world->inventory, TOWER_ADDITION);
+    inventory_add_tower(&world->inventory, TOWER_SUBTRACT);
+    inventory_add_tower(&world->inventory, TOWER_MULTIPLY);
+    inventory_add_tower(&world->inventory, TOWER_DIVIDE);
+    inventory_add_tower(&world->inventory, TOWER_PRIME);
+    inventory_add_tower(&world->inventory, TOWER_EQUALS);
+
     world->tower_count = 0;
     world->enemy_count = 0;
     world->next_enemy_id = 0;

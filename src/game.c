@@ -73,7 +73,7 @@ static void game_draw(Game* game) {
 }
 
 void game_init(Game* game) {
-    InitWindow(900, 600, "Math Defense!?");
+    InitWindow(900, 600, "Math Defence");
     SetTargetFPS(60);
 
     game->running = true;

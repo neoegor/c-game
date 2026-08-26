@@ -202,10 +202,78 @@ static bool tower_attack(Tower* tower, Enemy* enemies, int enemy_count, Path* pa
 }
 
 static const TowerDefinition definitions[] = {
-    [TOWER_ADD] = {OP_ADD, 0.5f, 5.5f, 10.0f},
-    [TOWER_MULTIPLY] = {OP_MULTIPLY, 0.5f, 5.5f, 10.0f},
-    [TOWER_EQUALS] = {OP_EQUALS, 0.5f, 8.5f, 10.0f},
-    [TOWER_PRIME] = {OP_PRIME, 0.5f, 8.5f, 30.0f},
+    [TOWER_ADDITION] = {
+        .display_name = "+ Tower",
+        .operation = OP_ADDITION,
+        .operand_required = true,
+        .default_operand = 1,
+        .min_operand = 1,
+        .max_operand = 100,
+        .attack_interval = 0.5f,
+        .attack_radius = 5.5f,
+        .projectile_speed = 10.0f,
+        .cost = 500.0f
+    },
+    [TOWER_SUBTRACT] = {
+        .display_name = "- Tower",
+        .operation = OP_SUBTRACT,
+        .operand_required = true,
+        .default_operand = 1,
+        .min_operand = 1,
+        .max_operand = 100,
+        .attack_interval = 0.5f,
+        .attack_radius = 5.5f,
+        .projectile_speed = 10.0f,
+        .cost = 500.0f
+    },
+    [TOWER_MULTIPLY] = {
+        .display_name = "* Tower",
+        .operation = OP_MULTIPLY,
+        .operand_required = true,
+        .default_operand = 2,
+        .min_operand = 2,
+        .max_operand = 5,
+        .attack_interval = 0.5f,
+        .attack_radius = 5.5f,
+        .projectile_speed = 10.0f,
+        .cost = 500.0f
+    },
+    [TOWER_DIVIDE] = {
+        .display_name = "/ Tower",
+        .operation = OP_DIVIDE,
+        .operand_required = true,
+        .default_operand = 2,
+        .min_operand = 2,
+        .max_operand = 5,
+        .attack_interval = 0.5f,
+        .attack_radius = 5.5f,
+        .projectile_speed = 10.0f,
+        .cost = 500.0f
+    },
+    [TOWER_EQUALS] = {
+        .display_name = "= Tower",
+        .operation = OP_EQUALS,
+        .operand_required = true,
+        .default_operand = 1,
+        .min_operand = -100,
+        .max_operand = 100,
+        .attack_interval = 0.5f,
+        .attack_radius = 8.5f,
+        .projectile_speed = 8.0f,
+        .cost = 1000.0f
+    },
+    [TOWER_PRIME] = {
+        .display_name = "Prime Tower",
+        .operation = OP_PRIME,
+        .operand_required = false,
+        .default_operand = 0,
+        .min_operand = 0,
+        .max_operand = 0,
+        .attack_interval = 0.5f,
+        .attack_radius = 8.5f,
+        .projectile_speed = 8.0f,
+        .cost = 1000.0f
+    },
 };
 
 bool operation_can_apply(
@@ -225,6 +293,10 @@ bool operation_can_apply(
     }
 
     return true;
+}
+
+const TowerDefinition *tower_get_definition(TowerType type) {
+    return &definitions[type];
 }
 
 void tower_init(
