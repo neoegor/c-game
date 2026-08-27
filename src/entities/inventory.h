@@ -16,7 +16,7 @@ typedef struct {
 
 void inventory_init(Inventory* inventory);
 void inventory_add_tower(Inventory* inventory, TowerType tower_type);
-TowerType inventory_get_tower_type(Inventory* inventory);
+TowerType inventory_get_tower_type(Inventory* inventory, int index);
 void inventory_select_slot(Inventory* inventory, int index);
 
 #endif

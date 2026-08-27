@@ -9,7 +9,7 @@
 #include "entities/tower.h"
 #include "entities/path.h"
 
-void play_world_spawn_enemy(PlayWorld* world) {
+static void play_world_spawn_enemy(PlayWorld* world) {
     Vector2 begining = world->path.points[0];
     Vector2 end = world->path.points[1];
     Vector2 velocity = Vector2Subtract(end, begining);
@@ -20,11 +20,11 @@ void play_world_spawn_enemy(PlayWorld* world) {
         world->next_enemy_id++,
         begining,
         velocity,
-        GetRandomValue(1, 9)
+        GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE)
     );
 }
 
-void play_world_kill_enemy(PlayWorld* world, EnemyID id) {
+static void play_world_kill_enemy(PlayWorld* world, EnemyID id) {
     for (int i = 0; i < world->enemy_count; i++) {
         if (world->enemies[i].id == id) {
             memmove(
@@ -38,7 +38,7 @@ void play_world_kill_enemy(PlayWorld* world, EnemyID id) {
     }
 }
 
-void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_type, int operand) {
+static void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_type, int operand) {
     for (int i = 0; i < world->enemy_count; i++) {
         Enemy* enemy = &world->enemies[i];
         if (enemy->id == id) {
@@ -61,6 +61,9 @@ void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationType op_t
                 case OP_EQUALS:
                 case OP_PRIME:
                     enemy->value = 0;
+                    break;
+                case OP_ABSOLUTE_VALUE:
+                    enemy->value = abs(enemy->value);
                     break;
             }
             
@@ -194,18 +197,19 @@ void play_world_init(PlayWorld* world) {
     inventory_add_tower(&world->inventory, TOWER_DIVIDE);
     inventory_add_tower(&world->inventory, TOWER_PRIME);
     inventory_add_tower(&world->inventory, TOWER_EQUALS);
+    inventory_add_tower(&world->inventory, TOWER_ABSOLUTE_VALUE);
 
     world->tower_count = 0;
     world->enemy_count = 0;
     world->next_enemy_id = 0;
 
     world->path.count = 0;
-    world->path.points[world->path.count++] = (Vector2){-1, 7};
-    world->path.points[world->path.count++] = (Vector2){35, 7};
-    world->path.points[world->path.count++] = (Vector2){35, 14};
-    world->path.points[world->path.count++] = (Vector2){20, 14};
-    world->path.points[world->path.count++] = (Vector2){20, 23};
-    world->path.points[world->path.count++] = (Vector2){45, 23};
+    world->path.points[world->path.count++] = (Vector2){-1.0f, 7.0f};
+    world->path.points[world->path.count++] = (Vector2){35.0f, 7.0f};
+    world->path.points[world->path.count++] = (Vector2){35.0f, 14.0f};
+    world->path.points[world->path.count++] = (Vector2){20.0f, 14.0f};
+    world->path.points[world->path.count++] = (Vector2){20.0f, 23.0f};
+    world->path.points[world->path.count++] = (Vector2){45.0f, 23.0f};
 
     wave_init(&world->wave, 100);
 }

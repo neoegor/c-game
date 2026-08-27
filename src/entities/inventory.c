@@ -11,8 +11,8 @@ void inventory_add_tower(Inventory* inventory, TowerType tower_type) {
     inventory->slot_count++;
 }
 
-TowerType inventory_get_tower_type(Inventory* inventory) {
-return inventory->slots[inventory->selected_slot].type;
+TowerType inventory_get_tower_type(Inventory* inventory, int index) {
+    return inventory->slots[index].type;
 }
 
 void inventory_select_slot(Inventory* inventory, int index) {

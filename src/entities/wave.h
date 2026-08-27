@@ -4,6 +4,8 @@
 #include "common.h"
 
 #define SPAWN_INTERVAL 1.0f
+#define ENEMY_MIN_VALUE -99
+#define ENEMY_MAX_VALUE 99
 
 typedef struct {
     float spawn_interval;

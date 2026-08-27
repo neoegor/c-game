@@ -27,9 +27,9 @@ void menu_draw_world(MenuScene* scene) {
 SceneRequest menu_draw_ui(MenuScene* scene) {
     SceneRequest request = {.type = REQUEST_NONE};
 
-    GuiLabel((Rectangle){0, 0, 100, 20}, "Menu");
+    GuiLabel((Rectangle){0, 0, 60, 20}, "Menu");
 
-    if (GuiButton((Rectangle){300, 250, 200, 50}, "Play")) {
+    if (GuiButton((Rectangle){350, 250, 200, 50}, "Play")) {
         request.type = REQUEST_SWITCH;
         request.target = PLAY_SCENE;
     }

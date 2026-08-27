@@ -35,8 +35,6 @@ typedef struct {
 
 void play_world_init(PlayWorld* world);
 void play_world_update(PlayWorld* world, float dt);
-void play_world_spawn_enemy(PlayWorld* world);
-void play_world_kill_enemy(PlayWorld* world, int id);
 void play_world_place_tower(PlayWorld* world, Vector2 position, TowerType type, int operand);
 bool tower_placement_is_allowed(PlayWorld* world, Vector2 position, TowerType type);
 

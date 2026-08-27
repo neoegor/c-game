@@ -203,7 +203,7 @@ static bool tower_attack(Tower* tower, Enemy* enemies, int enemy_count, Path* pa
 
 static const TowerDefinition definitions[] = {
     [TOWER_ADDITION] = {
-        .display_name = "+ Tower",
+        .display_name = "+",
         .operation = OP_ADDITION,
         .operand_required = true,
         .default_operand = 1,
@@ -215,7 +215,7 @@ static const TowerDefinition definitions[] = {
         .cost = 500.0f
     },
     [TOWER_SUBTRACT] = {
-        .display_name = "- Tower",
+        .display_name = "-",
         .operation = OP_SUBTRACT,
         .operand_required = true,
         .default_operand = 1,
@@ -227,7 +227,7 @@ static const TowerDefinition definitions[] = {
         .cost = 500.0f
     },
     [TOWER_MULTIPLY] = {
-        .display_name = "* Tower",
+        .display_name = "*",
         .operation = OP_MULTIPLY,
         .operand_required = true,
         .default_operand = 2,
@@ -239,7 +239,7 @@ static const TowerDefinition definitions[] = {
         .cost = 500.0f
     },
     [TOWER_DIVIDE] = {
-        .display_name = "/ Tower",
+        .display_name = "/",
         .operation = OP_DIVIDE,
         .operand_required = true,
         .default_operand = 2,
@@ -251,7 +251,7 @@ static const TowerDefinition definitions[] = {
         .cost = 500.0f
     },
     [TOWER_EQUALS] = {
-        .display_name = "= Tower",
+        .display_name = "=",
         .operation = OP_EQUALS,
         .operand_required = true,
         .default_operand = 1,
@@ -263,7 +263,7 @@ static const TowerDefinition definitions[] = {
         .cost = 1000.0f
     },
     [TOWER_PRIME] = {
-        .display_name = "Prime Tower",
+        .display_name = "Prime",
         .operation = OP_PRIME,
         .operand_required = false,
         .default_operand = 0,
@@ -271,9 +271,21 @@ static const TowerDefinition definitions[] = {
         .max_operand = 0,
         .attack_interval = 0.5f,
         .attack_radius = 8.5f,
-        .projectile_speed = 8.0f,
+        .projectile_speed = 30.0f,
         .cost = 1000.0f
     },
+    [TOWER_ABSOLUTE_VALUE] = {
+        .display_name = "|x|",
+        .operation = OP_ABSOLUTE_VALUE,
+        .operand_required = false,
+        .default_operand = 0,
+        .min_operand = 0,
+        .max_operand = 0,
+        .attack_interval = 0.5f,
+        .attack_radius = 5.5f,
+        .projectile_speed = 8.0f,
+        .cost = 1000.0f
+    }
 };
 
 bool operation_can_apply(
@@ -287,6 +299,9 @@ bool operation_can_apply(
             break;
         case OP_PRIME:
             if (!is_prime(enemy_value)) return false;
+            break;
+        case OP_ABSOLUTE_VALUE:
+            if (enemy_value > 0) return false;
             break;
         default:
             break;

@@ -13,7 +13,8 @@ typedef enum {
     TOWER_MULTIPLY,
     TOWER_DIVIDE,
     TOWER_EQUALS,
-    TOWER_PRIME
+    TOWER_PRIME,
+    TOWER_ABSOLUTE_VALUE
 } TowerType;
 
 typedef enum {
@@ -22,7 +23,8 @@ typedef enum {
     OP_MULTIPLY,
     OP_DIVIDE,
     OP_EQUALS,
-    OP_PRIME
+    OP_PRIME,
+    OP_ABSOLUTE_VALUE
 } OperationType;
 
 typedef struct {

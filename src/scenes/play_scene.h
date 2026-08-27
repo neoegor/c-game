@@ -8,14 +8,24 @@
 #include "world/play_world.h"
 
 #define CELL 20.0f
-#define INVENTORY_SLOT_SIZE 90.0f
-#define INVENTORY_GAP 8.0f
-#define INVENTORY_BOTTOM_MARGIN 12.0f
+#define INVENTORY_HEIGH 90.0f
+#define PROJECTILE_RADIUS 0.125f
+#define ENEMY_TEXT_SIZE 20
+
+#define INVENTORY_SLOT_SIZE 80.0f
+#define INVENTORY_GAP 5.0f
+#define INVENTORY_BOTTOM_MARGIN 5.0f
 
 typedef enum {
     SCENE_NORMAL,
     SCENE_OPERAND_PROMPT
 } SceneState;
+
+typedef struct {
+    Rectangle world_area;
+    Camera2D world_camera;
+    Rectangle inventory_area;
+} PlayLayout;
 
 typedef struct {
     Vector2 position;
@@ -27,8 +37,11 @@ typedef struct {
 typedef struct {
     Scene scene;
     SceneState state;
+    PlayLayout layout;
     PlayWorld world;
     PendingPlacement pending;
+    bool dragging;
+    int dragging_slot_index;
 } PlayScene;
 
 void play_init(PlayScene* scene);
