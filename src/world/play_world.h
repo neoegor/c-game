@@ -10,8 +10,8 @@
 #include "entities/wave.h"
 #include "entities/inventory.h"
 
-#define INITIAL_HEALTH 100
-#define INITIAL_CURRENCY 99999
+#define INITIAL_HEALTH 1000
+#define INITIAL_CURRENCY 2000
 
 typedef enum {
     WORLD_PLAYING,
@@ -20,6 +20,8 @@ typedef enum {
 } WorldState;
 
 typedef struct {
+    int grid_width;
+    int grid_height;
     WorldState state;
     int health;
     int currency;
@@ -33,7 +35,7 @@ typedef struct {
     EnemyWave wave;
 } PlayWorld;
 
-void play_world_init(PlayWorld* world);
+void play_world_init(PlayWorld* world, int world_width, int world_height);
 void play_world_update(PlayWorld* world, float dt);
 void play_world_place_tower(PlayWorld* world, Vector2 position, TowerType type, int operand);
 bool tower_placement_is_allowed(PlayWorld* world, Vector2 position, TowerType type);

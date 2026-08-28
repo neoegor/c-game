@@ -73,15 +73,23 @@ static void game_draw(Game* game) {
 }
 
 void game_init(Game* game) {
-    InitWindow(900, 600, "Math Defence");
+    InitWindow(WIDTH, HEIGHT, "Math Defence");
     SetTargetFPS(60);
+    SetExitKey(KEY_NULL);
 
     game->running = true;
     menu_init(&game->menu);
     play_init(&game->play);
     game->current = &game->menu.scene;
 
+    // game->font = LoadFontEx("assets/fonts/jet.ttf", 64, NULL, 0);
+    // SetTextureFilter(
+    //     game->font.texture,
+    //     TEXTURE_FILTER_BILINEAR
+    // );
+    // GuiSetFont(game->font);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    // GuiSetStyle(DEFAULT, TEXT_SPACING, 0);
 }
 
 void game_run(Game* game) {
@@ -96,6 +104,8 @@ void game_run(Game* game) {
 void game_free(Game* game) {
     game->running = false;
     game->current = NULL;
+
+    // UnloadFont(game->font);
 
     menu_free(&game->menu);
     play_free(&game->play);

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "common.h"
 #include "world/play_world.h"
@@ -185,7 +186,9 @@ static void play_world_check_end_condition(PlayWorld* world) {
     }
 }
 
-void play_world_init(PlayWorld* world) {
+void play_world_init(PlayWorld* world, int world_width, int world_height) {
+    world->grid_width = world_width;
+    world->grid_height = world_height;
     world->state = WORLD_PLAYING;
     world->health = INITIAL_HEALTH;
     world->currency = INITIAL_CURRENCY;
@@ -203,13 +206,12 @@ void play_world_init(PlayWorld* world) {
     world->enemy_count = 0;
     world->next_enemy_id = 0;
 
-    world->path.count = 0;
-    world->path.points[world->path.count++] = (Vector2){-1.0f, 7.0f};
-    world->path.points[world->path.count++] = (Vector2){35.0f, 7.0f};
-    world->path.points[world->path.count++] = (Vector2){35.0f, 14.0f};
-    world->path.points[world->path.count++] = (Vector2){20.0f, 14.0f};
-    world->path.points[world->path.count++] = (Vector2){20.0f, 23.0f};
-    world->path.points[world->path.count++] = (Vector2){45.0f, 23.0f};
+    assert(path_generate(
+        &world->path,
+        world->grid_width,
+        world->grid_height,
+        3
+    ));
 
     wave_init(&world->wave, 100);
 }

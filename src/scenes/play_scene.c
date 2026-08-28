@@ -42,24 +42,41 @@ static void layout_init(PlayLayout* layout) {
     };
 }
 
-static void draw_hover_tower(PlayScene* scene) {
+static void draw_hover(PlayScene* scene) {
+    if (scene->dragging || scene->state == SCENE_OPERAND_PROMPT) return;
+
+    Vector2 mouse = mouse_to_grid(scene->layout);
+
+    DrawRectangleLinesEx(
+        (Rectangle){
+            mouse.x,
+            mouse.y,
+            1,
+            1,
+        },
+        0.1f,
+        BLACK
+    );
+}
+
+static void draw_dragging_tower(PlayScene* scene) {
     Vector2 mouse;
     TowerType type;
 
     if (scene->state == SCENE_NORMAL) {
-        // if (scene->world.inventory.selected_slot == -1) return;
         if (!scene->dragging) return;
+        if (!CheckCollisionPointRec(GetMousePosition(), scene->layout.world_area)) return;
+
         mouse = mouse_to_grid(scene->layout);
-        // TODO helper here
         type = inventory_get_tower_type(&scene->world.inventory, scene->dragging_slot_index);
     } else if (scene->state == SCENE_OPERAND_PROMPT) {
         mouse = scene->pending.position;
         type = scene->pending.type;
     } else return;
 
-    Color hover_color = GRAY;
+    Color drag_color = GRAY;
     if (!tower_placement_is_allowed(&scene->world, mouse, type)) {
-        hover_color = MAROON;
+        drag_color = MAROON;
     }
 
     DrawRectangleRec(
@@ -69,7 +86,7 @@ static void draw_hover_tower(PlayScene* scene) {
             1,
             1,
         },
-        hover_color
+        drag_color
     );
     DrawCircleLinesV(
         (Vector2){
@@ -77,11 +94,13 @@ static void draw_hover_tower(PlayScene* scene) {
             mouse.y + 0.5f
         },
         tower_get_definition(type)->attack_radius,
-        hover_color 
+        drag_color 
     );
 }
 
 static void draw_towers(PlayScene* scene) {
+    Vector2 mouse = mouse_to_grid(scene->layout);
+
     for (int i = 0; i < scene->world.tower_count; i++) {
         Tower tower = scene->world.towers[i];
         DrawRectangleRec(
@@ -93,43 +112,78 @@ static void draw_towers(PlayScene* scene) {
             }, 
             BLACK
         );
-        DrawCircleLinesV(
+
+        if (Vector2Equals(mouse, tower.position)) {
+            DrawCircleLinesV(
+                (Vector2){
+                    tower.position.x + 0.5f,
+                    tower.position.y + 0.5f,
+                },
+                tower.attack_radius,
+                BLACK
+            );
+        }
+    }
+}
+
+static void draw_towers_text(PlayScene* scene) {
+    for (int i = 0; i < scene->world.tower_count; i++) {
+        Tower tower = scene->world.towers[i];
+
+        Vector2 screen_position = GetWorldToScreen2D(
             (Vector2){
                 tower.position.x + 0.5f,
-                tower.position.y + 0.5f,
+                tower.position.y + 0.5f
             },
-            tower.attack_radius,
-            BLACK
+            scene->layout.world_camera
+        );
+
+        const char *text = TextFormat("%s", tower_get_definition(tower.type)->display_name);
+        int width = MeasureText(text, ENEMY_TEXT_SIZE);
+
+        int text_x = (int)roundf(
+            screen_position.x - (float)width / 2.0f
+        );
+        int text_y = (int)roundf(
+            screen_position.y - (float)ENEMY_TEXT_SIZE / 2.0f
+        );
+
+        DrawText(
+            text,
+            text_x,
+            text_y,
+            ENEMY_TEXT_SIZE,
+            LIGHTGRAY
         );
     }
 }
 
 static void draw_path(PlayScene* scene) {
-    Vector2 prev = scene->world.path.points[0];
     for (int i = 1; i < scene->world.path.count; i++) {
-        Vector2 current = scene->world.path.points[i];
-        if (prev.x < current.x) {
+        Vector2 start = scene->world.path.points[i - 1];
+        Vector2 end = scene->world.path.points[i];
+
+        if (start.y == end.y) {
             DrawRectangleRec(
-                (Rectangle) {
-                    prev.x,
-                    prev.y,
-                    1 + (current.x - prev.x),
-                    1 + (current.y - prev.y),
+                (Rectangle){
+                    fminf(start.x, end.x),
+                    start.y,
+                    fabsf(end.x - start.x) + 1.0f,
+                    1.0f
                 },
                 LIGHTGRAY
             );
-        } else {
+        } else if (start.x == end.x) {
             DrawRectangleRec(
                 (Rectangle){
-                    current.x,
-                    prev.y,
-                    1 + (prev.x - current.x),
-                    1 + (current.y - prev.y),
+                    start.x,
+                    fminf(start.y, end.y),
+                    1.0f,
+                    fabsf(end.y - start.y) + 1.0f
                 },
                 LIGHTGRAY
             );
         }
-        prev = current;
     }
 }
 
@@ -233,32 +287,50 @@ static int inventory_slot_at(Inventory* inventory, Vector2 mouse) {
     return -1;
 }
 
+static void pending_placement_begin(PlayScene* scene, Vector2 mouse, TowerType type) {
+    scene->state = SCENE_OPERAND_PROMPT;
+    scene->pending.position = mouse;
+    scene->pending.type = type;
+    scene->pending.operand = tower_get_definition(type)->default_operand;
+    scene->pending.operand_edit_mode = false;
+}
+
+static void pending_placement_place(PlayScene* scene) {
+    scene->pending.operand_edit_mode = false;
+
+    inventory_select_slot(&scene->world.inventory, -1);
+
+    play_world_place_tower(
+        &scene->world,
+        scene->pending.position,
+        scene->pending.type,
+        scene->pending.operand
+    );
+
+    scene->state = SCENE_NORMAL;
+}
+
+static void pending_placement_cancel(PlayScene* scene) {
+    scene->pending.operand_edit_mode = false;
+
+    inventory_select_slot(&scene->world.inventory, -1);
+
+    scene->state = SCENE_NORMAL;
+}
+
 static void begin_tower_placement(PlayScene* scene, Vector2 mouse) {
     if (scene->dragging_slot_index == -1) return;
 
     TowerType type = inventory_get_tower_type(&scene->world.inventory, scene->dragging_slot_index);
 
     if (tower_placement_is_allowed(&scene->world, mouse, type)) {
-        scene->state = SCENE_OPERAND_PROMPT;
-        scene->pending.position = mouse;
-        scene->pending.type = type;
-        scene->pending.operand = tower_get_definition(type)->default_operand;
-        scene->pending.operand_edit_mode = false;
+        pending_placement_begin(scene, mouse, type);
 
         if (!tower_get_definition(type)->operand_required) {
-            scene->pending.operand_edit_mode = false;
-
-            inventory_select_slot(&scene->world.inventory, -1);
-
-            play_world_place_tower(
-                &scene->world,
-                scene->pending.position,
-                scene->pending.type,
-                scene->pending.operand
-            );
-
-            scene->state = SCENE_NORMAL;
+            pending_placement_place(scene);
         }
+    } else {
+        inventory_select_slot(&scene->world.inventory, -1);
     }
 }
 
@@ -315,28 +387,14 @@ void draw_operand_prompt_ui(PlayScene* scene) {
             (Rectangle){ popup.x + 50, popup.y + 135, 90, 35 },
             "Place"
         )) {
-        // TODO repetition here
-        scene->pending.operand_edit_mode = false;
-
-        inventory_select_slot(&scene->world.inventory, -1);
-
-        play_world_place_tower(
-            &scene->world,
-            scene->pending.position,
-            scene->pending.type,
-            scene->pending.operand
-        );
-
-        scene->state = SCENE_NORMAL;
+        pending_placement_place(scene);
     }
 
     if (GuiButton(
         (Rectangle){ popup.x + 160, popup.y + 135, 90, 35 },
         "Cancel"
     )) {
-        scene->pending.operand_edit_mode = false;
-        inventory_select_slot(&scene->world.inventory, -1);
-        scene->state = SCENE_NORMAL;
+        pending_placement_cancel(scene);
     }
 }
 
@@ -382,7 +440,11 @@ void play_init(PlayScene* scene) {
 
     layout_init(&scene->layout);
 
-    play_world_init(&scene->world);
+    play_world_init(
+        &scene->world,
+        scene->layout.world_area.width / CELL,
+        scene->layout.world_area.height / CELL
+    );
 
     scene->dragging = false;
     scene->dragging_slot_index = -1;
@@ -392,7 +454,11 @@ void play_init(PlayScene* scene) {
 }
 
 void play_reset(PlayScene* scene) {
-    play_world_init(&scene->world);
+    play_world_init(
+        &scene->world,
+        scene->layout.world_area.width / CELL,
+        scene->layout.world_area.height / CELL
+    );
     scene->state = SCENE_NORMAL;
     scene->dragging = false;
     scene->dragging_slot_index = -1;
@@ -401,18 +467,12 @@ void play_reset(PlayScene* scene) {
 SceneRequest play_update(PlayScene* scene, float dt) {
     SceneRequest request = {.type = REQUEST_NONE};
 
-    if (scene->world.state == WORLD_PLAYING && scene->state != SCENE_OPERAND_PROMPT) {
-        // if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        //     Vector2 mouse = GetMousePosition();
-        //     Inventory* inventory = &scene->world.inventory;
-        //     if (inventory_slot_at(inventory, mouse) == -1) {
-        //         begin_tower_placement(scene, mouse_to_grid(scene->layout));
-        //     }
-        // } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-        //     Inventory* inventory = &scene->world.inventory;
-        //     inventory_select_slot(inventory, -1);
-        // }
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        request.type = REQUEST_SWITCH;
+        request.target = MENU_SCENE;
+    }
 
+    if (scene->world.state == WORLD_PLAYING && scene->state != SCENE_OPERAND_PROMPT) {
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse = GetMousePosition();
             Inventory* inventory = &scene->world.inventory;
@@ -428,6 +488,9 @@ SceneRequest play_update(PlayScene* scene, float dt) {
             if (scene->dragging == true) {
                 if (CheckCollisionPointRec(GetMousePosition(), scene->layout.world_area)) {
                     begin_tower_placement(scene, mouse_to_grid(scene->layout));
+                } else {
+                    Inventory* inventory = &scene->world.inventory;
+                    inventory_select_slot(inventory, -1);
                 }
             }
             scene->dragging = false;
@@ -457,11 +520,13 @@ void play_draw_world(PlayScene* scene) {
     draw_enemies(scene);
 
     EndMode2D();
+    draw_towers_text(scene);
     draw_enemies_text(scene);
     BeginMode2D(scene->layout.world_camera);
 
     draw_projectiles(scene);
-    draw_hover_tower(scene);
+    draw_dragging_tower(scene);
+    draw_hover(scene);
     
     EndMode2D();
 
