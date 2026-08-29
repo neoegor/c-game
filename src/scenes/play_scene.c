@@ -113,7 +113,7 @@ static void draw_towers(PlayScene* scene) {
             BLACK
         );
 
-        if (Vector2Equals(mouse, tower.position)) {
+        if (scene->range_reveal || Vector2Equals(mouse, tower.position)) {
             DrawCircleLinesV(
                 (Vector2){
                     tower.position.x + 0.5f,
@@ -250,9 +250,50 @@ static void draw_projectiles(PlayScene* scene) {
     }
 }
 
+static void draw_wave_progress(PlayScene* scene) {
+    int resolved_enemies = scene->world.wave.spawned_enemies - scene->world.enemy_count;
+    int total_enemies = scene->world.wave.total_enemies;
+    float progress;
+
+    if (total_enemies == 0) {
+        progress = 1.0f;
+    } else {
+        progress = (float)resolved_enemies / (float)total_enemies;
+    }
+    progress = Clamp(progress, 0.0f, 1.0f);
+
+    Rectangle background = (Rectangle){
+        (GetScreenWidth() - WAVE_PROGRESS_WIDTH) / 2,
+        10,
+        WAVE_PROGRESS_WIDTH,
+        5
+    };
+    Rectangle infill = (Rectangle){
+        background.x,
+        background.y,
+        background.width * progress,
+        background.height
+    };
+
+    const char *text = TextFormat(
+        "Wave 1 - %d %% - %d / %d cleared",
+        (int)(progress * 100),
+        resolved_enemies,
+        total_enemies
+    );
+    int width = MeasureText(text, INVENTORY_TEXT_SIZE);
+    int x = background.x + (background.width - width) / 2;
+    int y = background.y + background.height + 5;   
+
+    DrawText(text, x, y, 20, BLACK);
+    DrawRectangleRec(background, GRAY);
+    DrawRectangleRec(infill, BLACK);
+}
+
 static void draw_hud(PlayScene* scene) {
-    DrawText(TextFormat("Health: %d", scene->world.health), 5, 20, 20, BLACK);
-    DrawText(TextFormat("Currency: %d", scene->world.currency), 5, 45, 20, BLACK);
+    draw_wave_progress(scene);
+    DrawText(TextFormat("HP %d", scene->world.health), 5, 5, 20, BLACK);
+    DrawText(TextFormat("$   %d", scene->world.currency), 5, 25, 20, BLACK);
 }
 
 static Rectangle inventory_slot_rect(
@@ -342,17 +383,72 @@ static void draw_inventory_ui(PlayScene* scene) {
     for (int i = 0; i < inventory->slot_count; i++) {
         Rectangle slot = inventory_slot_rect(inventory, i);
         TowerType type = inventory->slots[i].type;
+        int cost = tower_get_definition(type)->cost;
 
         const char *text = TextFormat(
-            tower_get_definition(type)->display_name
+            "%s\n$%d",
+            tower_get_definition(type)->display_name,
+            cost
         );
+        int width = MeasureText(text, INVENTORY_TEXT_SIZE);
+        int x = slot.x + (slot.width - width) / 2;
+        int y = slot.y + (slot.height - INVENTORY_TEXT_SIZE*2) / 2;
 
-        if (GuiButton(slot, text)) {
-            // inventory_select_slot(inventory, i);
+        float progress = (float)scene->world.currency / (float)cost;
+        progress = Clamp(progress, 0.0f, 1.0f);
+
+        Rectangle fill = {
+            slot.x,
+            slot.y + slot.height * (1.0f - progress),
+            slot.width,
+            slot.height * progress
+        };
+
+        if (scene->world.currency >= cost) {
+            DrawRectangleRoundedLinesEx(
+                slot,
+                0.2f,
+                16,
+                1.0f,
+                (Color){75, 202, 62, 255}
+            );
+        } else {
+            // DrawRectangleRec(fill, LIGHTGRAY);
+            int clip_y = (int)floorf(fill.y);
+            int clip_bottom = (int)ceilf(slot.y + slot.height);
+
+            BeginScissorMode(
+                (int)floorf(fill.x),
+                clip_y,
+                (int)ceilf(fill.width),
+                clip_bottom - clip_y
+            );
+            DrawRectangleRounded(
+                slot,
+                0.2f,
+                16,
+                LIGHTGRAY
+            );
+            EndScissorMode();
+            DrawRectangleRoundedLinesEx(
+                slot,
+                0.2f,
+                16,
+                1.0f,
+                DARKGRAY
+            );
         }
 
+        DrawText(text, x, y, INVENTORY_TEXT_SIZE, BLACK);
+
         if (inventory->selected_slot == i) {
-            DrawRectangleLinesEx(slot, 3.0f, BLACK);
+            DrawRectangleRoundedLinesEx(
+                slot,
+                0.2f,
+                16,
+                2.0f,
+                BLACK
+            );
         }
     }
 }
@@ -449,6 +545,8 @@ void play_init(PlayScene* scene) {
     scene->dragging = false;
     scene->dragging_slot_index = -1;
 
+    scene->range_reveal = false;
+
     GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
     GuiSetStyle(DEFAULT, TEXT_ALIGNMENT_VERTICAL, TEXT_ALIGN_MIDDLE);
 }
@@ -462,6 +560,7 @@ void play_reset(PlayScene* scene) {
     scene->state = SCENE_NORMAL;
     scene->dragging = false;
     scene->dragging_slot_index = -1;
+    scene->range_reveal = false;
 }
 
 SceneRequest play_update(PlayScene* scene, float dt) {
@@ -470,6 +569,8 @@ SceneRequest play_update(PlayScene* scene, float dt) {
     if (IsKeyPressed(KEY_ESCAPE)) {
         request.type = REQUEST_SWITCH;
         request.target = MENU_SCENE;
+    } else if (IsKeyPressed(KEY_R)) {
+        scene->range_reveal = !scene->range_reveal;
     }
 
     if (scene->world.state == WORLD_PLAYING && scene->state != SCENE_OPERAND_PROMPT) {

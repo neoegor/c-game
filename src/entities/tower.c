@@ -212,7 +212,7 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 10.0f,
-        .cost = 500.0f
+        .cost = 500
     },
     [TOWER_SUBTRACT] = {
         .display_name = "-",
@@ -224,7 +224,7 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 10.0f,
-        .cost = 500.0f
+        .cost = 500
     },
     [TOWER_MULTIPLY] = {
         .display_name = "*",
@@ -236,7 +236,7 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 10.0f,
-        .cost = 500.0f
+        .cost = 2000
     },
     [TOWER_DIVIDE] = {
         .display_name = "/",
@@ -248,7 +248,7 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 10.0f,
-        .cost = 500.0f
+        .cost = 2000
     },
     [TOWER_EQUALS] = {
         .display_name = "=",
@@ -258,9 +258,9 @@ static const TowerDefinition definitions[] = {
         .min_operand = -100,
         .max_operand = 100,
         .attack_interval = 0.5f,
-        .attack_radius = 8.5f,
+        .attack_radius = 16.5f,
         .projectile_speed = 8.0f,
-        .cost = 1000.0f
+        .cost = 3000
     },
     [TOWER_PRIME] = {
         .display_name = "Prime",
@@ -272,10 +272,10 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 8.5f,
         .projectile_speed = 30.0f,
-        .cost = 1000.0f
+        .cost = 3000
     },
     [TOWER_ABSOLUTE_VALUE] = {
-        .display_name = "|x|",
+        .display_name = "|...|",
         .operation = OP_ABSOLUTE_VALUE,
         .operand_required = false,
         .default_operand = 0,
@@ -284,7 +284,7 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 8.0f,
-        .cost = 1000.0f
+        .cost = 1000
     }
 };
 

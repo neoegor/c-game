@@ -8,13 +8,14 @@
 #include "world/play_world.h"
 
 #define CELL 20.0f
-#define INVENTORY_HEIGH 90.0f
 #define PROJECTILE_RADIUS 0.125f
 #define ENEMY_TEXT_SIZE 20
-
-#define INVENTORY_SLOT_SIZE 80.0f
-#define INVENTORY_GAP 5.0f
-#define INVENTORY_BOTTOM_MARGIN 5.0f
+#define INVENTORY_HEIGH 120.0f
+#define INVENTORY_TEXT_SIZE 20
+#define INVENTORY_SLOT_SIZE 90.0f
+#define INVENTORY_GAP 10.0f
+#define INVENTORY_BOTTOM_MARGIN 15.0f
+#define WAVE_PROGRESS_WIDTH 500
 
 typedef enum {
     SCENE_NORMAL,
@@ -42,6 +43,7 @@ typedef struct {
     PendingPlacement pending;
     bool dragging;
     int dragging_slot_index;
+    bool range_reveal;
 } PlayScene;
 
 void play_init(PlayScene* scene);

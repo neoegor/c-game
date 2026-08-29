@@ -37,7 +37,7 @@ typedef struct {
     float attack_interval;
     float attack_radius;
     float projectile_speed;
-    float cost;
+    int cost;
 } TowerDefinition;
 
 typedef struct {

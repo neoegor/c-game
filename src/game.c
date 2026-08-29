@@ -73,6 +73,7 @@ static void game_draw(Game* game) {
 }
 
 void game_init(Game* game) {
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "Math Defence");
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);

@@ -12,6 +12,8 @@
 
 #define INITIAL_HEALTH 1000
 #define INITIAL_CURRENCY 2000
+#define PATH_VERTICAL_SEGMENTS 3
+#define WAVE_SIZE 100
 
 typedef enum {
     WORLD_PLAYING,

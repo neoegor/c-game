@@ -210,10 +210,10 @@ void play_world_init(PlayWorld* world, int world_width, int world_height) {
         &world->path,
         world->grid_width,
         world->grid_height,
-        3
+        PATH_VERTICAL_SEGMENTS
     ));
 
-    wave_init(&world->wave, 100);
+    wave_init(&world->wave, WAVE_SIZE);
 }
 
 void play_world_update(PlayWorld* world, float dt) {
