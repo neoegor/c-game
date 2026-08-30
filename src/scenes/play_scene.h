@@ -6,6 +6,7 @@
 #include "common.h"
 #include "scenes/scene.h"
 #include "world/play_world.h"
+#include "ui/notifier.h"
 
 #define CELL 20.0f
 #define PROJECTILE_RADIUS 0.125f
@@ -16,6 +17,7 @@
 #define INVENTORY_GAP 10.0f
 #define INVENTORY_BOTTOM_MARGIN 15.0f
 #define WAVE_PROGRESS_WIDTH 500
+#define NOTIFIER_TEXT_SIZE 20
 
 typedef enum {
     SCENE_NORMAL,
@@ -33,6 +35,7 @@ typedef struct {
     TowerType type;
     int operand;
     bool operand_edit_mode;
+    bool just_opened;
 } PendingPlacement;
 
 typedef struct {
@@ -44,6 +47,7 @@ typedef struct {
     bool dragging;
     int dragging_slot_index;
     bool range_reveal;
+    Notifier notifier;
 } PlayScene;
 
 void play_init(PlayScene* scene);

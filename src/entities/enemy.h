@@ -16,6 +16,7 @@ typedef struct {
     Vector2 velocity;
     int target;
     int value;
+    int min_abs_value;
 } Enemy;
 
 typedef enum {

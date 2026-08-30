@@ -77,6 +77,7 @@ bool operation_can_apply(
     int enemy_value
 );
 const TowerDefinition *tower_get_definition(TowerType type);
+float operation_get_reward_multiplier(OperationType type);
 void tower_init(
     Tower* tower,
     TowerType type,

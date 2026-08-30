@@ -16,12 +16,20 @@ static void play_world_spawn_enemy(PlayWorld* world) {
     Vector2 velocity = Vector2Subtract(end, begining);
     velocity = Vector2Scale(Vector2Normalize(velocity), ENEMY_SPEED);
     Enemy* enemy = &world->enemies[world->enemy_count++];
+
+    assert(ENEMY_MAX_VALUE != 0 || ENEMY_MIN_VALUE != 0);
+    assert(ENEMY_MAX_VALUE >= ENEMY_MIN_VALUE);
+    int value;
+    do {
+        value = GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE);
+    } while (value == 0);
+
     enemy_init(
         enemy,
         world->next_enemy_id++,
         begining,
         velocity,
-        GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE)
+        value
     );
 }
 
@@ -43,8 +51,11 @@ static void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationTy
     for (int i = 0; i < world->enemy_count; i++) {
         Enemy* enemy = &world->enemies[i];
         if (enemy->id == id) {
+            // TODO do this in enemy.c?
             if (!operation_can_apply(op_type, operand, enemy->value)) 
                 return;
+
+            int old_value = enemy->value;
 
             switch (op_type) {
                 case OP_ADDITION:
@@ -67,9 +78,14 @@ static void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationTy
                     enemy->value = abs(enemy->value);
                     break;
             }
+
+            if (abs(enemy->value) < enemy->min_abs_value) {
+                enemy->min_abs_value = abs(enemy->value);
+                world->currency += (int)(abs(old_value - enemy->value) * operation_get_reward_multiplier(op_type));
+            }
             
             if (enemy->value == 0) {
-                world->currency += 100;
+                world->currency += ENEMY_KILL_REWARD;
                 memmove(
                     &world->enemies[i],
                     &world->enemies[i + 1],
@@ -83,17 +99,17 @@ static void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationTy
     }
 }
 
-bool tower_placement_is_allowed(PlayWorld* world, Vector2 position, TowerType type) {
+TowerPlacementResult tower_placement_validate(PlayWorld* world, Vector2 position, TowerType type) {
     // Currency
     float cost = tower_get_definition(type)->cost;
-    if (cost > world->currency) return false;
+    if (cost > world->currency) return PLACEMENT_INSUFFICIENT_CURRENCY;
 
     // Towers
     for (int i = 0; i < world->tower_count; i++) {
         Tower* tower = &world->towers[i];
 
         if (Vector2Equals(tower->position, position)) {
-            return false;
+            return PLACEMENT_OCCUPIED;
         }
     }
 
@@ -108,7 +124,7 @@ bool tower_placement_is_allowed(PlayWorld* world, Vector2 position, TowerType ty
                 float max_y = fmaxf(segment_start.y, segment_end.y);
 
                 if (position.y >= min_y && position.y <= max_y) {
-                    return false;
+                    return PLACEMENT_ON_PATH;
                 }
             }
         } else if (segment_start.y == segment_end.y) {
@@ -117,17 +133,17 @@ bool tower_placement_is_allowed(PlayWorld* world, Vector2 position, TowerType ty
                 float max_x = fmaxf(segment_start.x, segment_end.x);
 
                 if (position.x >= min_x && position.x <= max_x) {
-                    return false;
+                    return PLACEMENT_ON_PATH;
                 }
             }
         }
     }
     
-    return true;
+    return PLACEMENT_SUCCESS;
 }
 
 void play_world_place_tower(PlayWorld* world, Vector2 position, TowerType type, int operand) {
-    if (!tower_placement_is_allowed(world, position, type)) return;
+    if (tower_placement_validate(world, position, type) != PLACEMENT_SUCCESS) return;
     float cost = tower_get_definition(type)->cost;
     world->currency -= cost;
 

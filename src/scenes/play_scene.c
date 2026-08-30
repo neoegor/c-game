@@ -5,6 +5,7 @@
 #include "common.h"
 #include "scenes/play_scene.h"
 #include "world/play_world.h"
+#include "ui/notifier.h"
 
 static Vector2 mouse_to_grid(PlayLayout layout) {
     Vector2 mouse = GetMousePosition();
@@ -75,7 +76,7 @@ static void draw_dragging_tower(PlayScene* scene) {
     } else return;
 
     Color drag_color = GRAY;
-    if (!tower_placement_is_allowed(&scene->world, mouse, type)) {
+    if (tower_placement_validate(&scene->world, mouse, type) != PLACEMENT_SUCCESS) {
         drag_color = MAROON;
     }
 
@@ -334,6 +335,7 @@ static void pending_placement_begin(PlayScene* scene, Vector2 mouse, TowerType t
     scene->pending.type = type;
     scene->pending.operand = tower_get_definition(type)->default_operand;
     scene->pending.operand_edit_mode = false;
+    scene->pending.just_opened = true;
 }
 
 static void pending_placement_place(PlayScene* scene) {
@@ -364,13 +366,33 @@ static void begin_tower_placement(PlayScene* scene, Vector2 mouse) {
 
     TowerType type = inventory_get_tower_type(&scene->world.inventory, scene->dragging_slot_index);
 
-    if (tower_placement_is_allowed(&scene->world, mouse, type)) {
+    TowerPlacementResult result = tower_placement_validate(&scene->world, mouse, type);
+
+    if (result == PLACEMENT_SUCCESS) {
         pending_placement_begin(scene, mouse, type);
 
         if (!tower_get_definition(type)->operand_required) {
             pending_placement_place(scene);
         }
     } else {
+        const char* message;
+
+        switch (result) {
+            case PLACEMENT_INSUFFICIENT_CURRENCY:
+                message = "Insufficient currency";
+                break;
+            case PLACEMENT_OCCUPIED:
+                message = "Position occupied";
+                break;
+            case PLACEMENT_ON_PATH:
+                message = "Invalid tower placement";
+                break;
+            default:
+                message = "";
+                break;
+        }
+
+        notifier_show(&scene->notifier, NOTIFICATION_ERROR, message);
         inventory_select_slot(&scene->world.inventory, -1);
     }
 }
@@ -453,7 +475,45 @@ static void draw_inventory_ui(PlayScene* scene) {
     }
 }
 
-void draw_operand_prompt_ui(PlayScene* scene) {
+static void draw_notifier(PlayScene* scene) {
+    Notifier* notifier = &scene->notifier;
+    if (notifier->type == NOTIFICATION_NONE) return;
+
+    int width = MeasureText(notifier->message, NOTIFIER_TEXT_SIZE);
+    int x = (GetScreenWidth() - width) / 2;
+    int y = scene->layout.inventory_area.y - NOTIFIER_TEXT_SIZE - 5;   
+
+    float alpha = Clamp(
+        notifier->time_remaining / NOTIFICATION_FADE_DURATION,
+        0.0f,
+        1.0f
+    );
+
+    Color message_color = DARKGRAY;
+
+    switch (notifier->type) {
+        case NOTIFICATION_ERROR:
+            message_color = MAROON;
+            break;
+        default:
+            break;
+    }
+
+    DrawText(
+        notifier->message,
+        x,
+        y,
+        NOTIFIER_TEXT_SIZE,
+        Fade(message_color, alpha)
+    );
+}
+
+static void draw_operand_prompt_ui(PlayScene* scene) {
+    if (scene->pending.just_opened) {
+        scene->pending.just_opened = false;
+        return;
+    }
+
     Rectangle popup = {
         GetScreenWidth() / 2 - 150,
         GetScreenHeight() / 2 - 100,
@@ -547,6 +607,8 @@ void play_init(PlayScene* scene) {
 
     scene->range_reveal = false;
 
+    notifier_init(&scene->notifier);
+
     GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
     GuiSetStyle(DEFAULT, TEXT_ALIGNMENT_VERTICAL, TEXT_ALIGN_MIDDLE);
 }
@@ -561,6 +623,8 @@ void play_reset(PlayScene* scene) {
     scene->dragging = false;
     scene->dragging_slot_index = -1;
     scene->range_reveal = false;
+
+    notifier_init(&scene->notifier);
 }
 
 SceneRequest play_update(PlayScene* scene, float dt) {
@@ -571,6 +635,12 @@ SceneRequest play_update(PlayScene* scene, float dt) {
         request.target = MENU_SCENE;
     } else if (IsKeyPressed(KEY_R)) {
         scene->range_reveal = !scene->range_reveal;
+
+        const char* message = scene->range_reveal
+            ? "Tower ranges ON"
+            : "Tower ranges OFF";
+
+        notifier_show(&scene->notifier, NOTIFICATION_INFO, message);
     }
 
     if (scene->world.state == WORLD_PLAYING && scene->state != SCENE_OPERAND_PROMPT) {
@@ -601,6 +671,8 @@ SceneRequest play_update(PlayScene* scene, float dt) {
     if (scene->state == SCENE_NORMAL) {
         play_world_update(&scene->world, dt);
     }
+
+    notifier_update(&scene->notifier, dt);
 
     return request;
 }
@@ -640,6 +712,8 @@ SceneRequest play_draw_ui(PlayScene* scene) {
     SceneRequest request = {.type = REQUEST_NONE};
 
     draw_inventory_ui(scene);
+
+    draw_notifier(scene);
     
     if (scene->state == SCENE_OPERAND_PROMPT) {
         draw_operand_prompt_ui(scene);

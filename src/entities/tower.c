@@ -288,6 +288,16 @@ static const TowerDefinition definitions[] = {
     }
 };
 
+static const float operation_reward_multiplier[] = {
+    [OP_ADDITION] = 10.0f,
+    [OP_SUBTRACT] = 10.0f,
+    [OP_MULTIPLY] = 20.0f,
+    [OP_DIVIDE] = 20.0f,
+    [OP_EQUALS] = 0.0f,
+    [OP_PRIME] = 0.0f,
+    [OP_ABSOLUTE_VALUE] = 0.0f,
+};
+
 bool operation_can_apply(
     OperationType operation,
     int operand,
@@ -312,6 +322,10 @@ bool operation_can_apply(
 
 const TowerDefinition *tower_get_definition(TowerType type) {
     return &definitions[type];
+}
+
+float operation_get_reward_multiplier(OperationType type) {
+    return operation_reward_multiplier[type];
 }
 
 void tower_init(

@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include <raymath.h>
+#include <stdlib.h>
 
 #include "common.h"
 #include "enemy.h"
@@ -17,6 +18,7 @@ void enemy_init(
     enemy->velocity = velocity;
     enemy->target = 1;
     enemy->value = value;
+    enemy->min_abs_value = abs(value);
 }
 
 EnemyResult enemy_update(
