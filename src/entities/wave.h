@@ -4,17 +4,35 @@
 #include "common.h"
 
 #define SPAWN_INTERVAL 1.0f
-#define ENEMY_MIN_VALUE -25
-#define ENEMY_MAX_VALUE 25
+#define ENEMY_MIN_VALUE -100
+#define ENEMY_MAX_VALUE 100
+
+typedef enum {
+    VALUE_RANDOM,
+    VALUE_POSITIVE,
+    VALUE_NEGATIVE,
+    VALUE_EVEN,
+    VALUE_ODD,
+    VALUE_PRIME,
+    VALUE_SQUARE,
+    VALUE_COUNT
+} ValueType;
 
 typedef struct {
+    const char* display_name;
+    int total_enemies;
+    float value_weights[VALUE_COUNT];
+} WaveDefinition;
+
+typedef struct {
+    WaveDefinition definition;
     float spawn_interval;
     float time_since_spawn;
-    int total_enemies;
     int spawned_enemies;
 } EnemyWave;
 
-void wave_init(EnemyWave* wave, int total_enemies);
+void wave_init(EnemyWave* wave, WaveDefinition definition);
 bool wave_update(EnemyWave* wave, float dt);
+int wave_generate_value(EnemyWave* wave);
 
 #endif

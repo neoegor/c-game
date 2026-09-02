@@ -71,6 +71,7 @@ typedef struct {
     int operand;
 } TowerEvent;
 
+bool is_prime(int n);
 bool operation_can_apply(
     OperationType operation,
     int operand,

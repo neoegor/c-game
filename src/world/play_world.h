@@ -11,10 +11,11 @@
 #include "entities/inventory.h"
 
 #define INITIAL_HEALTH 1000
-#define INITIAL_CURRENCY 2000
+#define INITIAL_CURRENCY 3000
 #define ENEMY_KILL_REWARD 100
 #define PATH_VERTICAL_SEGMENTS 3
 #define WAVE_SIZE 100
+#define TOWER_LIMIT 10
 
 typedef enum {
     WORLD_PLAYING,
@@ -31,11 +32,15 @@ typedef struct {
     Inventory inventory;
     Tower towers[128];
     int tower_count;
+    int tower_limit;
     int next_enemy_id;
     Enemy enemies[128];
     int enemy_count;
     Path path;
-    EnemyWave wave;
+    EnemyWave waves[128];
+    int wave_count;
+    int current_wave_index;
+    EnemyWave* wave;
 } PlayWorld;
 
 typedef enum {
@@ -43,6 +48,7 @@ typedef enum {
     PLACEMENT_INSUFFICIENT_CURRENCY,
     PLACEMENT_OCCUPIED,
     PLACEMENT_ON_PATH,
+    PLACEMENT_TOWER_LIMIT,
 } TowerPlacementResult;
 
 void play_world_init(PlayWorld* world, int world_width, int world_height);

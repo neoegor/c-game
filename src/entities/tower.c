@@ -16,7 +16,7 @@ typedef struct {
     float impact_time;
 } TargetSolution;
 
-static bool is_prime(int n) {
+bool is_prime(int n) {
     if (n < 2) {
         return false;
     }
@@ -304,6 +304,9 @@ bool operation_can_apply(
     int enemy_value
 ) {
     switch (operation) {
+        case OP_DIVIDE:
+            if (enemy_value % operand != 0) return false;
+            break;
         case OP_EQUALS:
             if (enemy_value != operand) return false;
             break;

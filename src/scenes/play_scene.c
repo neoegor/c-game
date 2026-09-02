@@ -252,8 +252,8 @@ static void draw_projectiles(PlayScene* scene) {
 }
 
 static void draw_wave_progress(PlayScene* scene) {
-    int resolved_enemies = scene->world.wave.spawned_enemies - scene->world.enemy_count;
-    int total_enemies = scene->world.wave.total_enemies;
+    int resolved_enemies = scene->world.wave->spawned_enemies - scene->world.enemy_count;
+    int total_enemies = scene->world.wave->definition.total_enemies;
     float progress;
 
     if (total_enemies == 0) {
@@ -277,7 +277,9 @@ static void draw_wave_progress(PlayScene* scene) {
     };
 
     const char *text = TextFormat(
-        "Wave 1 - %d %% - %d / %d cleared",
+        "Wave %d - %s - %d%% - %d/%d cleared",
+        scene->world.current_wave_index+1,
+        scene->world.wave->definition.display_name,
         (int)(progress * 100),
         resolved_enemies,
         total_enemies
@@ -295,6 +297,7 @@ static void draw_hud(PlayScene* scene) {
     draw_wave_progress(scene);
     DrawText(TextFormat("HP %d", scene->world.health), 5, 5, 20, BLACK);
     DrawText(TextFormat("$   %d", scene->world.currency), 5, 25, 20, BLACK);
+    DrawText(TextFormat("T   %d/%d", scene->world.tower_count, scene->world.tower_limit), 5, 50, 20, BLACK);
 }
 
 static Rectangle inventory_slot_rect(
@@ -387,6 +390,9 @@ static void begin_tower_placement(PlayScene* scene, Vector2 mouse) {
             case PLACEMENT_ON_PATH:
                 message = "Invalid tower placement";
                 break;
+            case PLACEMENT_TOWER_LIMIT:
+                message = "Tower limit reached";
+                break;
             default:
                 message = "";
                 break;
@@ -426,7 +432,7 @@ static void draw_inventory_ui(PlayScene* scene) {
             slot.height * progress
         };
 
-        if (scene->world.currency >= cost) {
+        if (scene->world.currency >= cost && scene->world.tower_count < scene->world.tower_limit) {
             DrawRectangleRoundedLinesEx(
                 slot,
                 0.2f,

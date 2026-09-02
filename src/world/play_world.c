@@ -17,19 +17,12 @@ static void play_world_spawn_enemy(PlayWorld* world) {
     velocity = Vector2Scale(Vector2Normalize(velocity), ENEMY_SPEED);
     Enemy* enemy = &world->enemies[world->enemy_count++];
 
-    assert(ENEMY_MAX_VALUE != 0 || ENEMY_MIN_VALUE != 0);
-    assert(ENEMY_MAX_VALUE >= ENEMY_MIN_VALUE);
-    int value;
-    do {
-        value = GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE);
-    } while (value == 0);
-
     enemy_init(
         enemy,
         world->next_enemy_id++,
         begining,
         velocity,
-        value
+        wave_generate_value(world->wave)
     );
 }
 
@@ -100,6 +93,9 @@ static void play_world_transform_enemy(PlayWorld* world, EnemyID id, OperationTy
 }
 
 TowerPlacementResult tower_placement_validate(PlayWorld* world, Vector2 position, TowerType type) {
+    // Tower limit
+    if (world->tower_count >= world->tower_limit) return PLACEMENT_TOWER_LIMIT;
+
     // Currency
     float cost = tower_get_definition(type)->cost;
     if (cost > world->currency) return PLACEMENT_INSUFFICIENT_CURRENCY;
@@ -193,11 +189,19 @@ static void enemies_update(PlayWorld* world, float dt) {
     }
 }
 
-static void play_world_check_end_condition(PlayWorld* world) {
+static void check_wave_switch(PlayWorld* world) {
+    if (world->wave->definition.total_enemies == world->wave->spawned_enemies && world->enemy_count == 0) {
+        if (world->current_wave_index + 1 >= world->wave_count) return;
+        world->current_wave_index++;
+        world->wave = &world->waves[world->current_wave_index];
+    }
+}
+
+static void check_end_condition(PlayWorld* world) {
     if (world->health <= 0) {
         world->health = 0;
         world->state = WORLD_LOST;
-    } else if (world->wave.total_enemies == world->wave.spawned_enemies && world->enemy_count == 0) {
+    } else if (world->wave->definition.total_enemies == world->wave->spawned_enemies && world->enemy_count == 0) {
         world->state = WORLD_WON;
     }
 }
@@ -219,6 +223,7 @@ void play_world_init(PlayWorld* world, int world_width, int world_height) {
     inventory_add_tower(&world->inventory, TOWER_ABSOLUTE_VALUE);
 
     world->tower_count = 0;
+    world->tower_limit = TOWER_LIMIT;
     world->enemy_count = 0;
     world->next_enemy_id = 0;
 
@@ -229,17 +234,47 @@ void play_world_init(PlayWorld* world, int world_width, int world_height) {
         PATH_VERTICAL_SEGMENTS
     ));
 
-    wave_init(&world->wave, WAVE_SIZE);
+    WaveDefinition wave1 = {
+        .display_name = "Odd",
+        .total_enemies = 100,
+        .value_weights = {
+            [VALUE_ODD] = 1.0f,
+        }
+    };
+    WaveDefinition wave2 = {
+        .display_name = "Prime",
+        .total_enemies = 100,
+        .value_weights = {
+            [VALUE_PRIME] = 1.0f,
+        }
+    };
+    WaveDefinition wave3 = {
+        .display_name = "Negative",
+        .total_enemies = 100,
+        .value_weights = {
+            [VALUE_NEGATIVE] = 1.0f,
+        }
+    };
+
+    world->wave_count = 0;
+    world->current_wave_index = 0;
+
+    wave_init(&world->waves[world->wave_count++], wave1);
+    wave_init(&world->waves[world->wave_count++], wave2);
+    wave_init(&world->waves[world->wave_count++], wave3);
+
+    world->wave = &world->waves[world->current_wave_index];
 }
 
 void play_world_update(PlayWorld* world, float dt) {
     if (world->state != WORLD_PLAYING) return;
 
-    if (wave_update(&world->wave, dt)) {
+    if (wave_update(world->wave, dt)) {
         play_world_spawn_enemy(world);
     }
     towers_update(world, dt);
     enemies_update(world, dt);
 
-    play_world_check_end_condition(world);
+    check_wave_switch(world);
+    check_end_condition(world);
 }
