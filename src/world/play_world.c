@@ -11,16 +11,16 @@
 #include "entities/path.h"
 
 static void play_world_spawn_enemy(PlayWorld* world) {
-    Vector2 begining = world->path.points[0];
+    Vector2 beginning = world->path.points[0];
     Vector2 end = world->path.points[1];
-    Vector2 velocity = Vector2Subtract(end, begining);
+    Vector2 velocity = Vector2Subtract(end, beginning);
     velocity = Vector2Scale(Vector2Normalize(velocity), ENEMY_SPEED);
     Enemy* enemy = &world->enemies[world->enemy_count++];
 
     enemy_init(
         enemy,
         world->next_enemy_id++,
-        begining,
+        beginning,
         velocity,
         wave_generate_value(world->wave)
     );
@@ -138,6 +138,24 @@ TowerPlacementResult tower_placement_validate(PlayWorld* world, Vector2 position
     return PLACEMENT_SUCCESS;
 }
 
+void play_world_refund_tower(PlayWorld* world, int tower_index) {
+    int cost = tower_get_definition(world->towers[tower_index].type)->cost;
+    world->currency += (int)(cost * TOWER_REFUND_PROPORTION);
+
+    memmove(
+        &world->towers[tower_index],
+        &world->towers[tower_index + 1],
+        (world->tower_count - tower_index - 1) * sizeof(world->towers[0])
+    );
+    world->tower_count--;
+}
+
+void play_world_change_tower_operand(PlayWorld* world, int tower_index, int operand) {
+    // TODO check bounds
+    world->currency -= TOWER_OPERAND_CHANGE_COST;
+    world->towers[tower_index].operand = operand;
+}
+
 void play_world_place_tower(PlayWorld* world, Vector2 position, TowerType type, int operand) {
     if (tower_placement_validate(world, position, type) != PLACEMENT_SUCCESS) return;
     float cost = tower_get_definition(type)->cost;
@@ -236,21 +254,21 @@ void play_world_init(PlayWorld* world, int world_width, int world_height) {
 
     WaveDefinition wave1 = {
         .display_name = "Odd",
-        .total_enemies = 100,
+        .total_enemies = 10,
         .value_weights = {
             [VALUE_ODD] = 1.0f,
         }
     };
     WaveDefinition wave2 = {
         .display_name = "Prime",
-        .total_enemies = 100,
+        .total_enemies = 10,
         .value_weights = {
             [VALUE_PRIME] = 1.0f,
         }
     };
     WaveDefinition wave3 = {
         .display_name = "Negative",
-        .total_enemies = 100,
+        .total_enemies = 10,
         .value_weights = {
             [VALUE_NEGATIVE] = 1.0f,
         }

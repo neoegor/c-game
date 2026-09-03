@@ -204,6 +204,7 @@ static bool tower_attack(Tower* tower, Enemy* enemies, int enemy_count, Path* pa
 static const TowerDefinition definitions[] = {
     [TOWER_ADDITION] = {
         .display_name = "+",
+        .display_color = YELLOW,
         .operation = OP_ADDITION,
         .operand_required = true,
         .default_operand = 1,
@@ -216,6 +217,7 @@ static const TowerDefinition definitions[] = {
     },
     [TOWER_SUBTRACT] = {
         .display_name = "-",
+        .display_color = BLUE,
         .operation = OP_SUBTRACT,
         .operand_required = true,
         .default_operand = 1,
@@ -228,6 +230,7 @@ static const TowerDefinition definitions[] = {
     },
     [TOWER_MULTIPLY] = {
         .display_name = "*",
+        .display_color = ORANGE,
         .operation = OP_MULTIPLY,
         .operand_required = true,
         .default_operand = 2,
@@ -240,6 +243,7 @@ static const TowerDefinition definitions[] = {
     },
     [TOWER_DIVIDE] = {
         .display_name = "/",
+        .display_color = LIME,
         .operation = OP_DIVIDE,
         .operand_required = true,
         .default_operand = 2,
@@ -252,6 +256,7 @@ static const TowerDefinition definitions[] = {
     },
     [TOWER_EQUALS] = {
         .display_name = "=",
+        .display_color = GRAY,
         .operation = OP_EQUALS,
         .operand_required = true,
         .default_operand = 1,
@@ -264,6 +269,7 @@ static const TowerDefinition definitions[] = {
     },
     [TOWER_PRIME] = {
         .display_name = "Prime",
+        .display_color = PINK,
         .operation = OP_PRIME,
         .operand_required = false,
         .default_operand = 0,
@@ -276,6 +282,7 @@ static const TowerDefinition definitions[] = {
     },
     [TOWER_ABSOLUTE_VALUE] = {
         .display_name = "|...|",
+        .display_color = BEIGE,
         .operation = OP_ABSOLUTE_VALUE,
         .operand_required = false,
         .default_operand = 0,

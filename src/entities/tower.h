@@ -28,7 +28,8 @@ typedef enum {
 } OperationType;
 
 typedef struct {
-    const char *display_name;
+    const char* display_name;
+    Color display_color;
     OperationType operation;
     bool operand_required;
     int default_operand;

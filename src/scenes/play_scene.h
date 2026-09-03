@@ -11,7 +11,7 @@
 #define CELL 20.0f
 #define PROJECTILE_RADIUS 0.125f
 #define ENEMY_TEXT_SIZE 20
-#define INVENTORY_HEIGH 120.0f
+#define INVENTORY_HEIGHT 120.0f
 #define INVENTORY_TEXT_SIZE 20
 #define INVENTORY_SLOT_SIZE 90.0f
 #define INVENTORY_GAP 10.0f
@@ -21,7 +21,8 @@
 
 typedef enum {
     SCENE_NORMAL,
-    SCENE_OPERAND_PROMPT
+    SCENE_OPERAND_PROMPT,
+    SCENE_TOWER_MODIFICATION
 } SceneState;
 
 typedef struct {
@@ -38,12 +39,25 @@ typedef struct {
     bool just_opened;
 } PendingPlacement;
 
+typedef enum {
+    TOWER_MODIFICATION_MENU,
+    TOWER_MODIFICATION_OPERAND
+} TowerModificationStage;
+
+typedef struct {
+    TowerModificationStage stage;
+    int tower_index;
+    int draft_operand;
+    bool operand_edit_mode;
+} TowerModification;
+
 typedef struct {
     Scene scene;
     SceneState state;
     PlayLayout layout;
     PlayWorld world;
     PendingPlacement pending;
+    TowerModification modification;
     bool dragging;
     int dragging_slot_index;
     bool range_reveal;

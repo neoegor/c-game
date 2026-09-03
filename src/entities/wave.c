@@ -50,12 +50,8 @@ static int generate_even() {
     int value;
 
     do {
-        value = GetRandomValue(ENEMY_MIN_VALUE+1, ENEMY_MAX_VALUE);
-        if (value % 2 != 0) {
-            value -= 1;
-        }
-
-    } while (value == 0);
+        value = GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE);
+    } while (value == 0 || value % 2 != 0);
 
     return value;
 }
@@ -63,10 +59,9 @@ static int generate_even() {
 static int generate_odd() {
     int value;
 
-    value = GetRandomValue(ENEMY_MIN_VALUE+1, ENEMY_MAX_VALUE);
-    if (value % 2 != 0) return value;
-
-    value -= 1;
+    do {
+        value = GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE);
+    } while (value % 2 == 0);
 
     return value;
 }
@@ -93,23 +88,32 @@ int wave_generate_value(EnemyWave* wave) {
     assert(ENEMY_MAX_VALUE >= ENEMY_MIN_VALUE);
 
     int value;
-    ValueType type;
+    ValueType type = VALUE_COUNT;
+
     float random = (float)GetRandomValue(0, 999999) / 1000000.0f;
     float total_weight = 0;
     for (int i = 0; i < VALUE_COUNT; i++) {
         total_weight += wave->definition.value_weights[i];
     }
+    assert(total_weight > 0);
+
     float roll = total_weight * random;
     float cumulative_weight = 0;
 
     for (int i = 0; i < VALUE_COUNT; i++) {
-        cumulative_weight += wave->definition.value_weights[i];
+        float weight = wave->definition.value_weights[i];
+
+        assert(weight >= 0.0f);
+
+        cumulative_weight += weight;
 
         if (roll < cumulative_weight) {
             type = i;
             break;
         }
     }
+
+    assert(type != VALUE_COUNT);
 
     switch (type) {
         case VALUE_RANDOM:
@@ -134,6 +138,8 @@ int wave_generate_value(EnemyWave* wave) {
             value = generate_square();
             break;
         default:
+            assert(false);
+            value = 0;
             break;
     }
 

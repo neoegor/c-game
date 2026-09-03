@@ -16,6 +16,8 @@
 #define PATH_VERTICAL_SEGMENTS 3
 #define WAVE_SIZE 100
 #define TOWER_LIMIT 10
+#define TOWER_REFUND_PROPORTION 0.75f
+#define TOWER_OPERAND_CHANGE_COST 100
 
 typedef enum {
     WORLD_PLAYING,
@@ -55,5 +57,7 @@ void play_world_init(PlayWorld* world, int world_width, int world_height);
 void play_world_update(PlayWorld* world, float dt);
 void play_world_place_tower(PlayWorld* world, Vector2 position, TowerType type, int operand);
 TowerPlacementResult tower_placement_validate(PlayWorld* world, Vector2 position, TowerType type);
+void play_world_refund_tower(PlayWorld* world, int tower_index);
+void play_world_change_tower_operand(PlayWorld* world, int tower_index, int operand);
 
 #endif

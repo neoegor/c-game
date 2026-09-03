@@ -7,6 +7,12 @@
 #include "world/play_world.h"
 #include "ui/notifier.h"
 
+typedef enum {
+    OPERAND_PROMPT_NONE,
+    OPERAND_PROMPT_CONFIRM,
+    OPERAND_PROMPT_CANCEL,
+} OperandPromptResult;
+
 static Vector2 mouse_to_grid(PlayLayout layout) {
     Vector2 mouse = GetMousePosition();
 
@@ -27,7 +33,7 @@ static void layout_init(PlayLayout* layout) {
         0,
         0,
         width,
-        height - INVENTORY_HEIGH
+        height - INVENTORY_HEIGHT
     };
     layout->world_camera = (Camera2D){
         .offset = {layout->world_area.x, layout->world_area.y},
@@ -37,9 +43,9 @@ static void layout_init(PlayLayout* layout) {
     };
     layout->inventory_area = (Rectangle){
         0,
-        height - INVENTORY_HEIGH,
+        height - INVENTORY_HEIGHT,
         width,
-        INVENTORY_HEIGH
+        INVENTORY_HEIGHT
     };
 }
 
@@ -89,12 +95,14 @@ static void draw_dragging_tower(PlayScene* scene) {
         },
         drag_color
     );
-    DrawCircleLinesV(
+    DrawPolyLines(
         (Vector2){
             mouse.x + 0.5f,
             mouse.y + 0.5f
         },
+        128,
         tower_get_definition(type)->attack_radius,
+        0.0f,
         drag_color 
     );
 }
@@ -111,16 +119,28 @@ static void draw_towers(PlayScene* scene) {
                 1,
                 1
             }, 
-            BLACK
+            tower_get_definition(tower.type)->display_color
+        );
+        DrawRectangleLinesEx(
+            (Rectangle){
+                tower.position.x,
+                tower.position.y,
+                1,
+                1
+            }, 
+            0.1f,
+            GRAY
         );
 
         if (scene->range_reveal || Vector2Equals(mouse, tower.position)) {
-            DrawCircleLinesV(
+            DrawPolyLines(
                 (Vector2){
                     tower.position.x + 0.5f,
                     tower.position.y + 0.5f,
                 },
+                128,
                 tower.attack_radius,
+                0.0f,
                 BLACK
             );
         }
@@ -154,7 +174,7 @@ static void draw_towers_text(PlayScene* scene) {
             text_x,
             text_y,
             ENEMY_TEXT_SIZE,
-            LIGHTGRAY
+            BLACK
         );
     }
 }
@@ -403,6 +423,71 @@ static void begin_tower_placement(PlayScene* scene, Vector2 mouse) {
     }
 }
 
+static int check_tower_collision(PlayScene* scene, Vector2 mouse) {
+    for (int i = 0; i < scene->world.tower_count; i++) {
+        if (Vector2Equals(scene->world.towers[i].position, mouse)) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static void begin_tower_modification(PlayScene* scene, int tower_index) {
+    scene->state = SCENE_TOWER_MODIFICATION;
+    scene->modification.stage = TOWER_MODIFICATION_MENU;
+    scene->modification.tower_index = tower_index;
+    scene->modification.draft_operand = scene->world.towers[tower_index].operand;
+    scene->modification.operand_edit_mode = false;
+}
+
+static void tower_modification_cancel(PlayScene* scene) {
+    scene->state = SCENE_NORMAL;
+}
+
+static OperandPromptResult draw_operand_prompt_popup(TowerType type, int* operand, bool* edit_mode, const char* confirm_button_text) {
+    Rectangle popup = {
+        GetScreenWidth() / 2 - 150,
+        GetScreenHeight() / 2 - 100,
+        300,
+        200
+    };
+
+    GuiPanel(popup, NULL);
+
+    GuiLabel(
+        (Rectangle){ popup.x + 40, popup.y + 30, 220, 30 },
+        "Choose operand"
+    );
+
+    if (GuiValueBox(
+        (Rectangle){ popup.x + 50, popup.y + 75, 200, 40 },
+        NULL,
+        operand,
+        tower_get_definition(type)->min_operand,
+        tower_get_definition(type)->max_operand,
+        *edit_mode
+    )) {
+        *edit_mode = !*edit_mode;
+    }
+
+    if (GuiButton(
+            (Rectangle){ popup.x + 50, popup.y + 135, 90, 35 },
+            confirm_button_text
+        )) {
+        return OPERAND_PROMPT_CONFIRM;
+    }
+
+    if (GuiButton(
+        (Rectangle){ popup.x + 160, popup.y + 135, 90, 35 },
+        "Cancel"
+    )) {
+        return OPERAND_PROMPT_CANCEL;
+    }
+
+    return OPERAND_PROMPT_NONE;
+}
+
 static void draw_inventory_ui(PlayScene* scene) {
     GuiPanel(scene->layout.inventory_area, NULL);
 
@@ -520,43 +605,91 @@ static void draw_operand_prompt_ui(PlayScene* scene) {
         return;
     }
 
-    Rectangle popup = {
-        GetScreenWidth() / 2 - 150,
-        GetScreenHeight() / 2 - 100,
-        300,
-        200
-    };
-
-    GuiPanel(popup, NULL);
-
-    GuiLabel(
-        (Rectangle){ popup.x + 40, popup.y + 30, 220, 30 },
-        "Choose operand"
+    OperandPromptResult result = draw_operand_prompt_popup(
+        scene->pending.type,
+        &scene->pending.operand,
+        &scene->pending.operand_edit_mode,
+        "Place"
     );
 
-    if (GuiValueBox(
-        (Rectangle){ popup.x + 50, popup.y + 75, 200, 40 },
-        NULL,
-        &scene->pending.operand,
-        tower_get_definition(scene->pending.type)->min_operand,
-        tower_get_definition(scene->pending.type)->max_operand,
-        scene->pending.operand_edit_mode
-    )) {
-        scene->pending.operand_edit_mode = !scene->pending.operand_edit_mode;
+    switch (result) {
+        case OPERAND_PROMPT_NONE:
+            return;
+        case OPERAND_PROMPT_CONFIRM:
+            pending_placement_place(scene);
+            break;
+        case OPERAND_PROMPT_CANCEL:
+            pending_placement_cancel(scene);
+            break;
     }
+}
 
-    if (GuiButton(
+static void draw_tower_modification_ui(PlayScene* scene) {
+    if (scene->modification.stage == TOWER_MODIFICATION_MENU) {
+        Rectangle popup = {
+            GetScreenWidth() / 2 - 150,
+            GetScreenHeight() / 2 - 100,
+            300,
+            200
+        };
+
+        GuiPanel(popup, NULL);
+
+        TowerType type = scene->world.towers[scene->modification.tower_index].type;
+        GuiLabel(
+            (Rectangle){ popup.x + 40, popup.y + 30, 220, 30 },
+            TextFormat("Modify tower %s", tower_get_definition(type)->display_name)
+        );
+
+        if (tower_get_definition(type)->operand_required == true) {
+            if (GuiButton(
+                (Rectangle){ popup.x + 50, popup.y + 60, 200, 60 },
+                TextFormat("Change operand\n$%d", TOWER_OPERAND_CHANGE_COST)
+            )) {
+                if (scene->world.currency >= TOWER_OPERAND_CHANGE_COST) {
+                    scene->modification.stage = TOWER_MODIFICATION_OPERAND;
+                    scene->modification.draft_operand = scene->world.towers[scene->modification.tower_index].operand;
+                    scene->modification.operand_edit_mode = false;
+                } else {
+                    notifier_show(&scene->notifier, NOTIFICATION_ERROR, "Insufficient currency");
+                }
+            }
+        }
+
+        if (GuiButton(
             (Rectangle){ popup.x + 50, popup.y + 135, 90, 35 },
-            "Place"
+            "Refund"
         )) {
-        pending_placement_place(scene);
-    }
+            play_world_refund_tower(&scene->world, scene->modification.tower_index);
+            tower_modification_cancel(scene);
+        }
 
-    if (GuiButton(
-        (Rectangle){ popup.x + 160, popup.y + 135, 90, 35 },
-        "Cancel"
-    )) {
-        pending_placement_cancel(scene);
+        if (GuiButton(
+            (Rectangle){ popup.x + 160, popup.y + 135, 90, 35 },
+            "Cancel"
+        )) {
+            tower_modification_cancel(scene);
+        }
+    } else if (scene->modification.stage == TOWER_MODIFICATION_OPERAND) {
+        TowerType type = scene->world.towers[scene->modification.tower_index].type;
+        OperandPromptResult result = draw_operand_prompt_popup(
+            type,
+            &scene->modification.draft_operand,
+            &scene->modification.operand_edit_mode,
+            "Change"
+        );
+
+        switch (result) {
+            case OPERAND_PROMPT_NONE:
+                return;
+            case OPERAND_PROMPT_CONFIRM:
+                play_world_change_tower_operand(&scene->world, scene->modification.tower_index, scene->modification.draft_operand);
+                tower_modification_cancel(scene);
+                break;
+            case OPERAND_PROMPT_CANCEL:
+                scene->modification.stage = TOWER_MODIFICATION_MENU;
+                break;
+        }
     }
 }
 
@@ -649,7 +782,16 @@ SceneRequest play_update(PlayScene* scene, float dt) {
         notifier_show(&scene->notifier, NOTIFICATION_INFO, message);
     }
 
-    if (scene->world.state == WORLD_PLAYING && scene->state != SCENE_OPERAND_PROMPT) {
+    if (scene->world.state == WORLD_PLAYING && scene->state == SCENE_NORMAL) {
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+            if (CheckCollisionPointRec(GetMousePosition(), scene->layout.world_area)) {
+                int tower_index = check_tower_collision(scene, mouse_to_grid(scene->layout));
+                if (tower_index != -1) {
+                    begin_tower_modification(scene, tower_index);
+                }
+            }
+        }
+        
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse = GetMousePosition();
             Inventory* inventory = &scene->world.inventory;
@@ -723,6 +865,8 @@ SceneRequest play_draw_ui(PlayScene* scene) {
     
     if (scene->state == SCENE_OPERAND_PROMPT) {
         draw_operand_prompt_ui(scene);
+    } else if (scene->state == SCENE_TOWER_MODIFICATION) {
+        draw_tower_modification_ui(scene);
     }
 
     draw_game_over_ui(scene, &request);
