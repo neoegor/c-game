@@ -11,7 +11,7 @@
 #include "entities/inventory.h"
 
 #define INITIAL_HEALTH 1000
-#define INITIAL_CURRENCY 1500
+#define INITIAL_CURRENCY 5000
 #define ENEMY_KILL_REWARD 50
 #define PATH_VERTICAL_SEGMENTS 3
 #define NUMBER_OF_WAVES 5
