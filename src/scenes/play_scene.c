@@ -297,8 +297,9 @@ static void draw_wave_progress(PlayScene* scene) {
     };
 
     const char *text = TextFormat(
-        "Wave %d - %s - %d%% - %d/%d cleared",
+        "Wave %d/%d - %s - %d%% - %d/%d cleared",
         scene->world.current_wave_index+1,
+        NUMBER_OF_WAVES,
         scene->world.wave->definition.display_name,
         (int)(progress * 100),
         resolved_enemies,

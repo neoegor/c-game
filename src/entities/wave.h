@@ -4,8 +4,13 @@
 #include "common.h"
 
 #define SPAWN_INTERVAL 1.0f
-#define ENEMY_MIN_VALUE -100
-#define ENEMY_MAX_VALUE 100
+#define ENEMY_MAX_VALUE_INITIAL 20
+#define ENEMY_MAGNITUDE_INCREMENT 10
+#define ENEMY_MAX_VALUE_LIMIT 500
+
+#define WAVE_SIZE_INITIAL 10
+#define WAVE_SIZE_INCREMENT 20
+#define WAVE_SIZE_LIMIT 100
 
 typedef enum {
     VALUE_RANDOM,
@@ -21,6 +26,7 @@ typedef enum {
 typedef struct {
     const char* display_name;
     int total_enemies;
+    int value_magnitude;
     float value_weights[VALUE_COUNT];
 } WaveDefinition;
 
@@ -34,5 +40,6 @@ typedef struct {
 void wave_init(EnemyWave* wave, WaveDefinition definition);
 bool wave_update(EnemyWave* wave, float dt);
 int wave_generate_value(EnemyWave* wave);
+WaveDefinition wave_definition_generate(int wave_index);
 
 #endif

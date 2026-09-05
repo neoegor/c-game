@@ -6,6 +6,8 @@
 #include "wave.h"
 #include "tower.h"
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
 void wave_init(EnemyWave* wave, WaveDefinition definition) {
     wave->definition = definition;
     wave->spawn_interval = SPAWN_INTERVAL;
@@ -28,64 +30,63 @@ bool wave_update(EnemyWave* wave, float dt) {
     return false;
 }
 
-static int generate_random() {
+static int generate_random(int value_magnitude) {
     int value;
 
     do {
-        value = GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE);
+        value = GetRandomValue(-value_magnitude, value_magnitude);
     } while (value == 0);
 
     return value;
 }
 
-static int generate_positive() {
-    return GetRandomValue(1, ENEMY_MAX_VALUE);
+static int generate_positive(int value_magnitude) {
+    return GetRandomValue(1, value_magnitude);
 }
 
-static int generate_negative() {
-    return GetRandomValue(ENEMY_MIN_VALUE, -1);
+static int generate_negative(int value_magnitude) {
+    return GetRandomValue(-value_magnitude, -1);
 }
 
-static int generate_even() {
+static int generate_even(int value_magnitude) {
     int value;
 
     do {
-        value = GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE);
+        value = GetRandomValue(-value_magnitude, value_magnitude);
     } while (value == 0 || value % 2 != 0);
 
     return value;
 }
 
-static int generate_odd() {
+static int generate_odd(int value_magnitude) {
     int value;
 
     do {
-        value = GetRandomValue(ENEMY_MIN_VALUE, ENEMY_MAX_VALUE);
+        value = GetRandomValue(-value_magnitude, value_magnitude);
     } while (value % 2 == 0);
 
     return value;
 }
 
-static int generate_prime() {
+static int generate_prime(int value_magnitude) {
     int value;
 
     do {
-        value = GetRandomValue(2, ENEMY_MAX_VALUE);
+        value = GetRandomValue(2, value_magnitude);
     } while (!is_prime(value));
 
     return value;
 }
 
-static int generate_square() {
-    int value = GetRandomValue(1, floorf(sqrt(ENEMY_MAX_VALUE)));
+static int generate_square(int value_magnitude) {
+    int value = GetRandomValue(1, floorf(sqrt(value_magnitude)));
     value *= value;
 
     return value;
 }
 
 int wave_generate_value(EnemyWave* wave) {
-    assert(ENEMY_MAX_VALUE != 0 || ENEMY_MIN_VALUE != 0);
-    assert(ENEMY_MAX_VALUE >= ENEMY_MIN_VALUE);
+    assert(ENEMY_MAX_VALUE_INITIAL != 0);
 
     int value;
     ValueType type = VALUE_COUNT;
@@ -117,25 +118,25 @@ int wave_generate_value(EnemyWave* wave) {
 
     switch (type) {
         case VALUE_RANDOM:
-            value = generate_random();
+            value = generate_random(wave->definition.value_magnitude);
             break;
         case VALUE_POSITIVE:
-            value = generate_positive();
+            value = generate_positive(wave->definition.value_magnitude);
             break;
         case VALUE_NEGATIVE:
-            value = generate_negative();
+            value = generate_negative(wave->definition.value_magnitude);
             break;
         case VALUE_EVEN:
-            value = generate_even();
+            value = generate_even(wave->definition.value_magnitude);
             break;
         case VALUE_ODD:
-            value = generate_odd();
+            value = generate_odd(wave->definition.value_magnitude);
             break;
         case VALUE_PRIME:
-            value = generate_prime();
+            value = generate_prime(wave->definition.value_magnitude);
             break;
         case VALUE_SQUARE:
-            value = generate_square();
+            value = generate_square(wave->definition.value_magnitude);
             break;
         default:
             assert(false);
@@ -144,4 +145,35 @@ int wave_generate_value(EnemyWave* wave) {
     }
 
     return value;
+}
+
+static const char* wave_display_names[VALUE_COUNT] = {
+    [VALUE_RANDOM] = "Random",
+    [VALUE_POSITIVE] = "Positive",
+    [VALUE_NEGATIVE] = "Negative",
+    [VALUE_EVEN] = "Even",
+    [VALUE_ODD] = "Odd",
+    [VALUE_PRIME] = "Prime",
+    [VALUE_SQUARE] = "Square"
+};
+
+WaveDefinition wave_definition_generate(int wave_index) {
+    ValueType type = (ValueType)GetRandomValue(0, VALUE_COUNT - 1);
+
+    WaveDefinition wave = {
+        .display_name = wave_display_names[type],
+        .total_enemies = MIN(
+            WAVE_SIZE_INITIAL + wave_index * WAVE_SIZE_INCREMENT,
+            WAVE_SIZE_LIMIT
+        ),
+        .value_magnitude = MIN(
+            ENEMY_MAX_VALUE_INITIAL + wave_index * ENEMY_MAGNITUDE_INCREMENT,
+            ENEMY_MAX_VALUE_LIMIT 
+        ),
+        .value_weights = {0}
+    };
+
+    wave.value_weights[type] = 1.0f;
+
+    return wave;
 }

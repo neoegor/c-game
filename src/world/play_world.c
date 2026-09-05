@@ -236,9 +236,9 @@ void play_world_init(PlayWorld* world, int world_width, int world_height) {
     inventory_add_tower(&world->inventory, TOWER_SUBTRACT);
     inventory_add_tower(&world->inventory, TOWER_MULTIPLY);
     inventory_add_tower(&world->inventory, TOWER_DIVIDE);
-    inventory_add_tower(&world->inventory, TOWER_PRIME);
-    inventory_add_tower(&world->inventory, TOWER_EQUALS);
     inventory_add_tower(&world->inventory, TOWER_ABSOLUTE_VALUE);
+    inventory_add_tower(&world->inventory, TOWER_EQUALS);
+    inventory_add_tower(&world->inventory, TOWER_PRIME);
 
     world->tower_count = 0;
     world->tower_limit = TOWER_LIMIT;
@@ -252,34 +252,13 @@ void play_world_init(PlayWorld* world, int world_width, int world_height) {
         PATH_VERTICAL_SEGMENTS
     ));
 
-    WaveDefinition wave1 = {
-        .display_name = "Odd",
-        .total_enemies = 10,
-        .value_weights = {
-            [VALUE_ODD] = 1.0f,
-        }
-    };
-    WaveDefinition wave2 = {
-        .display_name = "Prime",
-        .total_enemies = 10,
-        .value_weights = {
-            [VALUE_PRIME] = 1.0f,
-        }
-    };
-    WaveDefinition wave3 = {
-        .display_name = "Negative",
-        .total_enemies = 10,
-        .value_weights = {
-            [VALUE_NEGATIVE] = 1.0f,
-        }
-    };
-
     world->wave_count = 0;
     world->current_wave_index = 0;
 
-    wave_init(&world->waves[world->wave_count++], wave1);
-    wave_init(&world->waves[world->wave_count++], wave2);
-    wave_init(&world->waves[world->wave_count++], wave3);
+    for (int wave_index = 0; wave_index < NUMBER_OF_WAVES; wave_index++) {
+        WaveDefinition wave = wave_definition_generate(wave_index);
+        wave_init(&world->waves[world->wave_count++], wave);
+    }
 
     world->wave = &world->waves[world->current_wave_index];
 }

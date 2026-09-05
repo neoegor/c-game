@@ -213,7 +213,7 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 10.0f,
-        .cost = 500
+        .cost = 400
     },
     [TOWER_SUBTRACT] = {
         .display_name = "-",
@@ -226,7 +226,7 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 10.0f,
-        .cost = 500
+        .cost = 400
     },
     [TOWER_MULTIPLY] = {
         .display_name = "*",
@@ -236,10 +236,10 @@ static const TowerDefinition definitions[] = {
         .default_operand = 2,
         .min_operand = 2,
         .max_operand = 5,
-        .attack_interval = 0.5f,
-        .attack_radius = 5.5f,
+        .attack_interval = 0.75f,
+        .attack_radius = 6.5f,
         .projectile_speed = 10.0f,
-        .cost = 2000
+        .cost = 700
     },
     [TOWER_DIVIDE] = {
         .display_name = "/",
@@ -249,10 +249,10 @@ static const TowerDefinition definitions[] = {
         .default_operand = 2,
         .min_operand = 2,
         .max_operand = 5,
-        .attack_interval = 0.5f,
-        .attack_radius = 5.5f,
+        .attack_interval = 0.75f,
+        .attack_radius = 6.5f,
         .projectile_speed = 10.0f,
-        .cost = 2000
+        .cost = 1200
     },
     [TOWER_EQUALS] = {
         .display_name = "=",
@@ -264,8 +264,8 @@ static const TowerDefinition definitions[] = {
         .max_operand = 100,
         .attack_interval = 0.5f,
         .attack_radius = 16.5f,
-        .projectile_speed = 8.0f,
-        .cost = 3000
+        .projectile_speed = 50.0f,
+        .cost = 1400
     },
     [TOWER_PRIME] = {
         .display_name = "Prime",
@@ -291,18 +291,18 @@ static const TowerDefinition definitions[] = {
         .attack_interval = 0.5f,
         .attack_radius = 5.5f,
         .projectile_speed = 8.0f,
-        .cost = 1000
+        .cost = 800
     }
 };
 
 static const float operation_reward_multiplier[] = {
-    [OP_ADDITION] = 10.0f,
-    [OP_SUBTRACT] = 10.0f,
-    [OP_MULTIPLY] = 20.0f,
-    [OP_DIVIDE] = 20.0f,
-    [OP_EQUALS] = 0.0f,
-    [OP_PRIME] = 0.0f,
-    [OP_ABSOLUTE_VALUE] = 0.0f,
+    [OP_ADDITION] = 4.0f,
+    [OP_SUBTRACT] = 4.0f,
+    [OP_MULTIPLY] = 0.0f,
+    [OP_DIVIDE] = 5.0f,
+    [OP_EQUALS] = 1.0f,
+    [OP_PRIME] = 1.0f,
+    [OP_ABSOLUTE_VALUE] = 1.0f,
 };
 
 bool operation_can_apply(
